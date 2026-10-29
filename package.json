@@ -1,11 +1,14 @@
 {
   "name": "dhyey-clinic-management",
   "version": "1.0.0",
-  "description": "Clinic Management System & Admin Portal",
+  "description": "Doctor Clinical Management System - React Vite + Express",
   "scripts": {
     "start": "cd backend && node server.js",
-    "dev": "cd backend && npm run dev",
-    "build": "cd backend && npm install"
+    "dev": "cd frontend && pnpm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && pnpm run build",
+    "build": "cd backend && npm install",
+    "build:all": "cd frontend && pnpm run build && cd ../backend && npm install"
   },
   "engines": {
     "node": ">=18.0.0"

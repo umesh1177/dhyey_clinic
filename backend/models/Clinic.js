@@ -16,16 +16,12 @@ const ClinicSchema = new mongoose.Schema(
     status: { type: String, enum: ['Active', 'Pending', 'Suspended'], default: 'Active' },
     services: {
       type: [String],
-      default: ['receptionist', 'appointment', 'digitalPrescription', 'certificates', 'billing'],
-    },
-    receptionist: {
-      type: mongoose.Schema.Types.Mixed,
-      default: { name: '', email: '', phone: '', shift: 'Morning Shift', status: 'Active' },
+      default: ['digitalPrescription', 'certificates', 'billing'],
     },
     doctorsCount: { type: Number, default: 1 },
     verifiedDocuments: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true }  
 );
 
 module.exports = mongoose.model('Clinic', ClinicSchema);

@@ -56,18 +56,6 @@ const validatePatient = (req, res, next) => {
   next();
 };
 
-// ---- Appointment ----
-const validateAppointment = (req, res, next) => {
-  const { patientName, date, clinicId } = req.body;
-
-  if (!isNonEmpty(patientName) && !isNonEmpty(req.body.patId))
-    return validationError(res, 'Patient information is required for the appointment.', 'patientName');
-  if (!isNonEmpty(date))
-    return validationError(res, 'Appointment date is required.', 'date');
-
-  next();
-};
-
 // ---- Consultation ----
 const validateConsultation = (req, res, next) => {
   const { patId, clinicId, visitDate } = req.body;
@@ -185,7 +173,6 @@ const validateHistory = (req, res, next) => {
 module.exports = {
   validateFamily,
   validatePatient,
-  validateAppointment,
   validateConsultation,
   validatePrescription,
   validateBill,

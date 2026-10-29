@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGradMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#0d6efd" />
+      <stop offset="100%" stop-color="#083344" />
+    </linearGradient>
+    <linearGradient id="crossGradMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <linearGradient id="glowGradMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full Bleed Square for Safe Zone Masking -->
+  <rect width="512" height="512" fill="url(#bgGradMask)" />
+
+  <!-- Background Pulse -->
+  <path d="M 80 256 L 150 256 L 180 190 L 225 330 L 270 210 L 300 280 L 330 256 L 432 256" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Safe Area Scaled Medical Cross -->
+  <g transform="translate(40, 40) scale(0.84)">
+    <path d="M 220 120 C 220 108.954 228.954 100 240 100 L 272 100 C 283.046 100 292 108.954 292 120 L 292 220 L 392 220 C 403.046 220 412 228.954 412 240 L 412 272 C 412 283.046 403.046 292 392 292 L 292 292 L 292 392 C 292 403.046 283.046 412 272 412 L 240 412 C 228.954 412 220 403.046 220 392 L 220 292 L 120 292 C 108.954 292 100 283.046 100 240 L 100 240 C 100 228.954 108.954 220 120 220 L 220 220 Z" fill="url(#crossGradMask)" />
+    <circle cx="256" cy="256" r="32" fill="url(#glowGradMask)" />
+    <path d="M 244 256 L 252 264 L 268 248" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

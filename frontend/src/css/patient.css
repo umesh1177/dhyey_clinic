@@ -1,0 +1,1319 @@
+/* =========================================================
+   PATIENT & CASE ENTRY VIEW STYLING
+   ========================================================= */
+
+.cms-case-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Patient Header Banner (Exact Match to Screenshot 1) */
+.cms-patient-header-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 7px solid #0f5132;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cms-patient-header-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cms-patient-header-row-bottom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.cms-patient-header-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  color: #0f5132;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Warning / Due Buttons (Pill shape with warning style) */
+.cms-due-pill-btn {
+  background: #b91c1c;
+  color: #ffffff;
+  border: none;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
+  transition: all 0.15s ease;
+}
+
+.cms-due-pill-btn:hover {
+  background: #991b1b;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(185, 28, 28, 0.4);
+}
+
+.cms-fam-due-btn {
+  background: #b91c1c;
+  color: #ffffff;
+  border: none;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 4px;
+  transition: all 0.15s ease;
+}
+
+.cms-fam-due-btn:hover {
+  background: #991b1b;
+  transform: translateY(-1px);
+}
+
+/* Action Pill Buttons */
+.cms-btn-del-patient {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 9999px;
+  padding: 6px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cms-btn-del-patient:hover {
+  background: #fca5a5;
+  color: #7f1d1d;
+}
+
+.cms-btn-edit-patient {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 9999px;
+  padding: 6px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cms-btn-edit-patient:hover {
+  background: #bbf7d0;
+  color: #14532d;
+}
+
+.cms-btn-new-visit {
+  background: #0f5132;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.cms-btn-new-visit:hover {
+  background: #0a3622;
+}
+
+/* New Visit Form Container (Exact Match to Screenshot 1) */
+.cms-visit-form-box {
+  background: var(--surface);
+  border: 2px solid #0f5132;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(15, 81, 50, 0.08);
+}
+
+.cms-visit-vitals-row {
+  display: grid;
+  grid-template-columns: 65px 65px 70px 80px minmax(180px, 1.2fr) minmax(180px, 1.2fr);
+  gap: 8px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .cms-visit-vitals-row {
+    grid-template-columns: 65px 65px 70px 80px 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .cms-visit-vitals-row {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+  .cms-vital-input-col.cms-col-wide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .cms-visit-vitals-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cms-vital-input-col.cms-col-wide {
+    grid-column: span 2;
+  }
+}
+
+.cms-vital-input-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  min-width: 0;
+}
+
+.cms-vital-input-col label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cms-vital-input-col input {
+  padding: 6px 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Multi-Tag Comma Autocomplete Dropdown */
+.cms-multi-autocomplete-box {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.cms-multi-autocomplete-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  transition: background 0.12s ease;
+}
+
+.cms-multi-autocomplete-item:hover,
+.cms-multi-autocomplete-item.active {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+/* Dietary Multi-Token Autocomplete Dropdown */
+.cms-dietary-autocomplete-box {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface, #ffffff);
+  border: 1.5px solid #10b981;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 250;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.cms-dietary-autocomplete-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  transition: all 0.12s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cms-dietary-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.cms-dietary-autocomplete-item:hover,
+.cms-dietary-autocomplete-item.active {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+/* Treatment & Medicine Interactive Autocomplete Dropdowns */
+.cms-treatment-autocomplete-box,
+.cms-medicine-autocomplete-box {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: 280px;
+  background: var(--surface, #ffffff);
+  border-radius: 8px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.cms-treatment-autocomplete-box {
+  border: 1.5px solid #f87171;
+}
+
+.cms-medicine-autocomplete-box {
+  border: 1.5px solid #0d9488;
+}
+
+.cms-treatment-autocomplete-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.12s ease;
+}
+
+.cms-medicine-autocomplete-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.12s ease;
+}
+
+.cms-treatment-autocomplete-item:hover,
+.cms-treatment-autocomplete-item.active {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+.cms-medicine-autocomplete-item:hover,
+.cms-medicine-autocomplete-item.active {
+  background: #ccfbf1 !important;
+  color: #0f766e !important;
+}
+
+/* Prescription Preview Modal & Scroll Viewport */
+.cms-prescription-preview-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 94vh !important;
+  max-height: 94vh !important;
+  overflow: hidden !important;
+}
+
+.cms-prescription-scroll-viewport {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cms-prescription-scroll-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cms-prescription-scroll-viewport::-webkit-scrollbar-track {
+  background: #64748b;
+}
+
+.cms-prescription-scroll-viewport::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.cms-prescription-scroll-viewport::-webkit-scrollbar-thumb:hover {
+  background: #1e293b;
+}
+
+.cms-vital-input-col input:focus {
+  border-color: #0f5132;
+  outline: none;
+}
+
+/* Split Boxes for Treatment and Prescription (Matching Screenshot 1) */
+.cms-visit-split-row {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 14px;
+}
+
+@media (max-width: 850px) {
+  .cms-visit-split-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cms-treatment-panel {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cms-treatment-panel-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #dc2626;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cms-prescription-panel {
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cms-prescription-panel-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0d9488;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Dosing Inputs for Prescription */
+.cms-dose-num-input {
+  width: 32px !important;
+  text-align: center;
+  padding: 4px 2px !important;
+  font-size: 12px !important;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+}
+
+/* Financial Bottom Row */
+.cms-financial-row {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Visit History Items (Matching Screenshot 2) */
+.cms-history-card-full {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cms-history-card-full:hover {
+  border-color: #0f5132;
+  box-shadow: 0 3px 10px rgba(15, 81, 50, 0.12);
+  transform: translateY(-1px);
+}
+
+.cms-history-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cms-history-date-text {
+  font-weight: 800;
+  font-size: 13.5px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cms-history-pills-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cms-pill-bp {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.cms-pill-ref {
+  background: #fce7f3;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.cms-pill-complaint {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.cms-pill-sugar {
+  background: #fef9c3;
+  color: #a16207;
+  border: 1px solid #fef08a;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.cms-pill-investigation {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.cms-pill-other {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* Compact Row for Older History Entries with Smooth Expand on Hover */
+.cms-history-row-compact {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  transition: all 0.25s ease;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.cms-history-row-compact .cms-compact-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.cms-history-row-compact .cms-expanded-details {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cms-history-row-compact:hover {
+  background: var(--surface);
+  border-color: #0f5132;
+  box-shadow: 0 2px 8px rgba(15, 81, 50, 0.12);
+}
+
+.cms-history-row-compact:hover .cms-expanded-details {
+  display: flex;
+}
+
+.cms-link-view-detail {
+  color: #0f5132;
+  font-weight: 800;
+  font-size: 12.5px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cms-link-view-detail:hover {
+  text-decoration: underline;
+  color: #0a3622;
+}
+
+/* Red Border Highlighting for Cases with Pending Dues */
+.cms-history-card-full.cms-card-has-due,
+.cms-history-row-compact.cms-card-has-due {
+  border: 2.5px solid #dc2626 !important;
+  background: #fff8f8 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2), 0 3px 12px rgba(220, 38, 38, 0.16) !important;
+  position: relative;
+}
+
+.cms-history-card-full.cms-card-has-due:hover,
+.cms-history-row-compact.cms-card-has-due:hover {
+  border-color: #b91c1c !important;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.3), 0 6px 18px rgba(220, 38, 38, 0.24) !important;
+  background: #fff5f5 !important;
+}
+
+.cms-history-card-full.cms-card-has-due .cms-due-pill-btn,
+.cms-history-row-compact.cms-card-has-due .cms-due-pill-btn {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 5px rgba(220, 38, 38, 0.3) !important;
+}
+
+.cms-due-alert-banner {
+  background: #fef2f2;
+  border: 1.5px solid #f87171;
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* =========================================================
+   INLINE EDITABLE HISTORY CARD (Matching User Photo)
+   ========================================================= */
+.cms-history-card-editable {
+  background: var(--surface);
+  border: 2px solid #0f5132;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(15, 81, 50, 0.16);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.cms-inline-edit-vitals-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cms-inline-edit-vitals-row .cms-vital-input-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.cms-inline-edit-vitals-row .cms-vital-input-col label {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #475569;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cms-inline-edit-vitals-row .cms-vital-input-col input {
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cms-inline-edit-vitals-row .cms-vital-input-col input:focus {
+  border-color: #0f5132;
+  outline: none;
+}
+
+/* =========================================================
+   LABORATORY INVESTIGATION REPORTS MODAL (Photos 1 & 2)
+   ========================================================= */
+.cms-lab-modal-container {
+  width: 1080px;
+  max-width: 96vw;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  border: 2px solid #0284c7;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.cms-lab-modal-header {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cms-lab-meta-grid {
+  background: #f8fafc;
+  border-bottom: 1.5px solid var(--border);
+  padding: 10px 18px;
+  display: grid;
+  grid-template-columns: 1.8fr 1.8fr 1.2fr;
+  gap: 8px 16px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 850px) {
+  .cms-lab-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cms-lab-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cms-lab-meta-label {
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 90px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.cms-lab-meta-input {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+}
+
+.cms-lab-tabs-nav {
+  display: flex;
+  background: #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
+  padding: 6px 14px 0;
+  gap: 6px;
+}
+
+.cms-lab-tab-btn {
+  padding: 8px 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: #cbd5e1;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cms-lab-tab-btn.active {
+  background: #ffffff;
+  color: #0369a1;
+  border-color: #94a3b8;
+  border-top: 3px solid #0284c7;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.cms-lab-body-container {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  background: #ffffff;
+}
+
+.cms-lab-section-header {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0369a1;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  border-bottom: 1.5px solid #e0f2fe;
+  padding-bottom: 3px;
+  letter-spacing: 0.3px;
+}
+
+.cms-lab-field-row {
+  display: grid;
+  grid-template-columns: 140px 105px minmax(130px, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.cms-lab-field-label {
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  padding-right: 6px;
+}
+
+.cms-lab-field-input {
+  padding: 4px 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #ffffff;
+  color: var(--text);
+  font-family: var(--font-mono);
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.cms-lab-field-range {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+/* Red Highlighting for Out of Range Values */
+.cms-lab-out-of-range {
+  color: #dc2626 !important;
+  border: 2px solid #dc2626 !important;
+  background: #fff5f5 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.25) !important;
+}
+
+/* 4 Multi-Line Textarea Boxes for X-Ray, Stool, Sonography, MRI */
+.cms-lab-textareas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .cms-lab-textareas-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cms-lab-textarea-card {
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cms-lab-textarea-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0369a1;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cms-lab-textarea-input {
+  width: 100%;
+  height: 110px;
+  padding: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+
+.cms-lab-textarea-input:focus {
+  border-color: #0284c7;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+/* Right Rail Action Buttons */
+.cms-lab-actions-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 90px;
+}
+
+.cms-lab-actions-rail .cms-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  justify-content: center;
+}
+
+/* =========================================================
+   MASTER DATA TAB LAYOUT & STYLES (Clean Alignment & Margins)
+   ========================================================= */
+.cms-master-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.cms-master-tabs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow-x: visible;
+  padding: 6px 2px 14px 2px;
+  border-bottom: 1.5px solid var(--border);
+  scrollbar-width: none;
+  margin-top: 4px;
+}
+
+.cms-master-tab-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.cms-master-tab-btn:hover {
+  background: var(--surface-alt);
+  border-color: #0f5132;
+  color: #0f5132;
+  transform: translateY(-1px);
+}
+
+.cms-master-tab-btn.active {
+  background: #0f5132;
+  border-color: #0f5132;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 81, 50, 0.28);
+}
+
+.cms-master-tab-btn.active .cms-pill {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.cms-master-layout-grid,
+.cms-master-layout-grid.cms-master-dietary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.cms-master-table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  height: 520px; /* Constrained fixed height - records scroll internally */
+  box-sizing: border-box;
+}
+
+.cms-master-table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.cms-master-table-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 5;
+  box-shadow: 0 1px 0 var(--border);
+  padding: 8px 10px !important;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.cms-compact-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cms-compact-table tbody td {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  line-height: 1.35;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.cms-compact-table tbody tr:hover td {
+  background: rgba(15, 81, 50, 0.025);
+}
+
+/* Master Data Pagination Footer */
+.cms-master-pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cms-page-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cms-page-btn:hover:not(:disabled) {
+  background: #0f5132;
+  color: #ffffff;
+  border-color: #0f5132;
+}
+
+.cms-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Master Data Modal Overlay */
+.cms-master-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.cms-master-modal-content {
+  background: var(--surface, #ffffff);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cms-master-modal-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.cms-master-modal-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cms-master-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+}
+
+.cms-master-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cms-master-field-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cms-master-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Dietary Advice Pill & Styles */
+.cms-pill-dietary {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cms-dietary-quick-chip {
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: #f0fdf4;
+  color: #0f5132;
+  border: 1px solid #bbf7d0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cms-dietary-quick-chip:hover {
+  background: #0f5132;
+  color: #ffffff;
+  border-color: #0f5132;
+}
+
+/* Dietary Multi-Token Autocomplete Dropdown */
+.cms-dietary-autocomplete-box {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface, #ffffff);
+  border: 1.5px solid #0f5132;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(15, 81, 50, 0.2);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.cms-dietary-autocomplete-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.12s ease;
+}
+
+.cms-dietary-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.cms-dietary-autocomplete-item:hover,
+.cms-dietary-autocomplete-item.active {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+/* =========================================================
+   PATIENT & CONSULTATION MOBILE RESPONSIVENESS
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .cms-consultation-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .cms-case-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .cms-case-banner-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cms-vitals-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .cms-prescription-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cms-prescription-table {
+    min-width: 600px;
+  }
+
+  .cms-history-row-compact .cms-compact-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .cms-master-field-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cms-family-filter-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cms-family-search-input {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .cms-vitals-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cms-history-date-text {
+    font-size: 12px;
+  }
+}
+
+

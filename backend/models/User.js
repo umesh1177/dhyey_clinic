@@ -11,10 +11,9 @@ const UserSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true, trim: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'doctor', 'receptionist'], default: 'doctor' },
+    role: { type: String, enum: ['doctor'], default: 'doctor' },
     name: { type: String, default: '' },
     email: { type: String, default: '', trim: true, lowercase: true },
-    employeeId: { type: String, default: '', trim: true, uppercase: true },
     specialization: { type: String, default: 'General Physician' },
     degree: { type: String, default: 'M.B.B.S / B.H.M.S.' },
     regNo: { type: String, default: 'G-9035' },

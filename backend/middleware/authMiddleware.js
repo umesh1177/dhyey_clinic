@@ -3,9 +3,8 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'wad_clinic_super_secure_jwt_token_2026_key';
 
 /**
- * authMiddleware - Strict JWT authentication.
+ * authMiddleware - Doctor JWT authentication.
  * Rejects any request without a valid token with 401.
- * Returns friendly, user-facing error messages for all failure cases.
  */
 const authMiddleware = (req, res, next) => {
   try {
@@ -26,28 +25,18 @@ const authMiddleware = (req, res, next) => {
       return res.status(401).json({
         success: false,
         error: 'UNAUTHORIZED',
-        message: 'Access denied. You must be logged in to perform this action. Please log in and try again.',
+        message: 'Access denied. You must be logged in as a doctor to perform this action. Please log in and try again.',
       });
     }
 
-    // Special mock tokens support (for development, demo, and admin dashboard)
-    if (token === 'mock-admin-token' || token.startsWith('mock-admin')) {
-      req.user = { id: 'admin', username: 'admin', role: 'admin', name: 'System Administrator' };
-      if (req.headers['x-clinic-id']) req.user.activeClinicId = req.headers['x-clinic-id'];
-      return next();
-    }
+    // Doctor mock tokens support (for development/offline demo)
     if (token === 'mock-doctor-token' || token.startsWith('mock-doc') || token.startsWith('mock-token-doc')) {
       req.user = { id: 'demo-doc', username: 'dhyey', role: 'doctor', name: 'Dr. Chirag Paghdal' };
       if (req.headers['x-clinic-id']) req.user.activeClinicId = req.headers['x-clinic-id'];
       return next();
     }
-    if (token === 'mock-receptionist-token' || token.startsWith('mock-rec') || token.startsWith('mock-token-rec')) {
-      req.user = { id: 'demo-rec', username: 'reception', role: 'receptionist', name: 'Front Desk Receptionist' };
-      if (req.headers['x-clinic-id']) req.user.activeClinicId = req.headers['x-clinic-id'];
-      return next();
-    }
     if (token.startsWith('mock-')) {
-      req.user = { id: 'demo-user', username: 'user', role: 'doctor', name: 'Doctor / User' };
+      req.user = { id: 'demo-user', username: 'dhyey', role: 'doctor', name: 'Dr. Chirag Paghdal' };
       if (req.headers['x-clinic-id']) req.user.activeClinicId = req.headers['x-clinic-id'];
       return next();
     }
@@ -85,36 +74,4 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-/**
- * adminOnly - Middleware to restrict routes to admin users only.
- * Must be used AFTER authMiddleware.
- */
-const adminOnly = (req, res, next) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      error: 'FORBIDDEN',
-      message: 'Access denied. This action requires administrator privileges.',
-    });
-  }
-  next();
-};
-
-/**
- * doctorOrReceptionist - Middleware to allow only clinical staff.
- * Must be used AFTER authMiddleware.
- */
-const clinicalStaffOnly = (req, res, next) => {
-  if (!req.user || !['doctor', 'receptionist', 'admin'].includes(req.user.role)) {
-    return res.status(403).json({
-      success: false,
-      error: 'FORBIDDEN',
-      message: 'Access denied. Only clinical staff can access this resource.',
-    });
-  }
-  next();
-};
-
 module.exports = authMiddleware;
-module.exports.adminOnly = adminOnly;
-module.exports.clinicalStaffOnly = clinicalStaffOnly;

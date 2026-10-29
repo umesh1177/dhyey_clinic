@@ -1,0 +1,531 @@
+/* =========================================================
+   CLINICAL DASHBOARD & KPI METRICS STYLING
+   State-of-the-Art Hospital Dashboard Layout & Alignment
+   ========================================================= */
+
+.cms-dash-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 100%;
+  animation: fadeInDash 0.25s ease-out;
+}
+
+@keyframes fadeInDash {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header & Date Filtering Toolbar */
+.cms-dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--surface);
+  padding: 12px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.cms-dash-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cms-dash-presets {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-alt);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.cms-dash-preset-btn {
+  background: transparent;
+  border: none;
+  padding: 5px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cms-dash-preset-btn:hover {
+  color: var(--text);
+}
+
+.cms-dash-preset-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cms-dash-date-picker-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cms-dash-date-input {
+  width: 145px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  height: 32px;
+}
+
+.cms-dash-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 5-Column High-Impact KPI Cards Row */
+.cms-dash-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1300px) {
+  .cms-dash-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .cms-dash-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cms-kpi-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.cms-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3.5px;
+  width: 100%;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cms-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+}
+
+.cms-kpi-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-ring), 0 4px 12px rgba(0, 0, 0, 0.04);
+  background: var(--surface);
+}
+
+.cms-kpi-card.active::before {
+  opacity: 1;
+}
+
+.cms-kpi-card.tone-opd::before { background: #0284c7; }
+.cms-kpi-card.tone-revenue::before { background: #10b981; }
+.cms-kpi-card.tone-apts::before { background: #6366f1; }
+.cms-kpi-card.tone-patients::before { background: #8b5cf6; }
+.cms-kpi-card.tone-dues::before { background: #ef4444; }
+
+.cms-kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cms-kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--surface-alt);
+}
+
+.cms-kpi-card.tone-opd .cms-kpi-icon { background: #e0f2fe; color: #0284c7; }
+.cms-kpi-card.tone-revenue .cms-kpi-icon { background: #d1fae5; color: #059669; }
+.cms-kpi-card.tone-apts .cms-kpi-icon { background: #e0e7ff; color: #4f46e5; }
+.cms-kpi-card.tone-patients .cms-kpi-icon { background: #ede9fe; color: #7c3aed; }
+.cms-kpi-card.tone-dues .cms-kpi-icon { background: #fee2e2; color: #dc2626; }
+
+.cms-kpi-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.2px;
+}
+
+.cms-kpi-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 23px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+}
+
+.cms-kpi-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cms-kpi-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+/* Expanded Full-Width Main Table Layout */
+.cms-dash-layout-grid {
+  display: block;
+  width: 100%;
+}
+
+/* Main Table Section */
+.cms-dash-table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.cms-dash-tab-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.cms-dash-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 7px 13px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.cms-dash-tab-btn:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.cms-dash-tab-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.cms-dash-tab-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.cms-dash-tab-btn.active .cms-dash-tab-count {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.cms-dash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+}
+
+.cms-dash-search-input {
+  max-width: 250px;
+  height: 32px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.cms-dash-table-body {
+  max-height: 480px;
+  overflow-y: auto;
+  min-height: 250px;
+}
+
+/* Polished Table Styles */
+.cms-dash-table-body .cms-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cms-dash-table-body .cms-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-alt);
+  z-index: 10;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.cms-dash-table-body .cms-table td {
+  padding: 11px 14px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.cms-dash-table-body .cms-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.cms-dash-table-body .cms-clickable-row {
+  cursor: pointer;
+}
+
+/* Right Side Column Widgets */
+.cms-dash-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cms-dash-widget-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.cms-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 11px;
+}
+
+.cms-widget-title {
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Dues Defaulters List */
+.cms-due-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.cms-due-item-row:hover {
+  background: var(--surface);
+  border-color: #fca5a5;
+  transform: translateX(3px);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.08);
+}
+
+/* Clinical Diagnoses Progress Bars */
+.cms-diag-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 0;
+}
+
+.cms-diag-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cms-diag-progress-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.cms-diag-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+
+/* Action Center Shortcut Badges */
+.cms-dash-shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+}
+
+.cms-dash-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 11px;
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cms-dash-action-btn:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+/* =========================================================
+   DASHBOARD RESPONSIVE BREAKPOINTS
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .cms-dash-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .cms-dash-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .cms-dash-filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .cms-dash-presets {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cms-dash-preset-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+  }
+
+  .cms-dash-date-picker-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cms-dash-date-input {
+    flex: 1;
+    width: auto;
+  }
+
+  .cms-dash-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .cms-kpi-card-inner {
+    padding: 12px 14px;
+  }
+
+  .cms-kpi-val {
+    font-size: 22px;
+  }
+
+  .cms-dash-quick-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .cms-dash-quick-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .cms-dash-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

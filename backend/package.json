@@ -1,7 +1,7 @@
 {
   "name": "wad-clinic-backend",
   "version": "1.0.0",
-  "description": "Clinic and Hospital Management System Backend & Admin Portal - WAD Project",
+  "description": "Doctor Clinical Management System Backend - WAD Project",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

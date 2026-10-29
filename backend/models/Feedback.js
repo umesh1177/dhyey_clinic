@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const FeedbackReplySchema = new mongoose.Schema({
   senderRole: {
     type: String,
-    enum: ['admin', 'doctor', 'staff'],
-    default: 'admin',
+    enum: ['doctor', 'support'],
+    default: 'doctor',
   },
   senderName: {
     type: String,
