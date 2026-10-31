@@ -16,6 +16,8 @@ export default function DashboardView({ onNavigate }) {
   const [dateRange, setDateRange] = useState('today');
   const [activeTab, setActiveTab] = useState('opd');
   const [tableSearch, setTableSearch] = useState('');
+  const [dashPage, setDashPage] = useState(1);
+  const [dashPerPage, setDashPerPage] = useState(10);
 
   const [stats, setStats] = useState({
     visitsToday: 0, newVisits: 0, revisits: 0,
@@ -109,6 +111,12 @@ export default function DashboardView({ onNavigate }) {
   const todayLabel = () => {
     const d = new Date();
     return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+  };
+
+  const paginate = (list) => {
+    if (dashPerPage === 'all') return list;
+    const start = (dashPage - 1) * Number(dashPerPage);
+    return list.slice(start, start + Number(dashPerPage));
   };
 
   const filtered = (list) => {
@@ -365,7 +373,7 @@ export default function DashboardView({ onNavigate }) {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setDashPage(1); }}
               style={{
                 padding: '8px 14px',
                 background: isActive ? '#fff' : 'transparent',
@@ -416,7 +424,7 @@ export default function DashboardView({ onNavigate }) {
             className="cms-input"
             placeholder="Search table..."
             value={tableSearch}
-            onChange={(e) => setTableSearch(e.target.value)}
+            onChange={(e) => { setTableSearch(e.target.value); setDashPage(1); }}
             style={{ width: '220px', height: '32px', fontSize: '12.5px', borderRadius: '6px' }}
           />
         </div>
@@ -447,7 +455,7 @@ export default function DashboardView({ onNavigate }) {
                     </td>
                   </tr>
                 ) : (
-                  filtered(allVisits).map((v, i) => (
+                  paginate(filtered(allVisits)).map((v, i) => (
                     <tr key={`${v.caseId}-${i}`} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                       <td style={{ padding: '12px', fontSize: '12.5px', fontWeight: 800, whiteSpace: 'nowrap' }}>
                         {v.time || '09:30 AM'}
@@ -521,7 +529,7 @@ export default function DashboardView({ onNavigate }) {
                     </td>
                   </tr>
                 ) : (
-                  filtered(followUps).map((f, i) => (
+                  paginate(filtered(followUps)).map((f, i) => (
                     <tr key={i}>
                       <td className="font-mono">{fmtDate(f.followUpDate || f.date)}</td>
                       <td style={{ fontWeight: 700 }}>{f.patientName || f.patName}</td>
@@ -553,7 +561,7 @@ export default function DashboardView({ onNavigate }) {
                     </td>
                   </tr>
                 ) : (
-                  filtered(allVisits.filter(v => Number(v.charge) > 0)).map((v, i) => (
+                  paginate(filtered(allVisits.filter(v => Number(v.charge) > 0))).map((v, i) => (
                     <tr key={i}>
                       <td className="font-mono">{fmtDate(v.date)}</td>
                       <td className="font-mono" style={{ color: 'var(--primary)' }}>{v.caseId}</td>
@@ -585,7 +593,7 @@ export default function DashboardView({ onNavigate }) {
                     </td>
                   </tr>
                 ) : (
-                  filtered(allPatients).map((p, i) => (
+                  paginate(filtered(allPatients)).map((p, i) => (
                     <tr key={i}>
                       <td className="font-mono" style={{ color: 'var(--primary)' }}>{p.id || p.patId}</td>
                       <td style={{ fontWeight: 700 }}>{p.name}</td>
@@ -619,7 +627,7 @@ export default function DashboardView({ onNavigate }) {
                     </td>
                   </tr>
                 ) : (
-                  filtered(allPatients.filter(p => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0))).map((p, i) => {
+                  paginate(filtered(allPatients.filter(p => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0)))).map((p, i) => {
                     const patDue = (Number(p.due) || 0) + (p.visits || []).reduce((s, v) => s + (Number(v.due) || 0), 0);
                     return (
                       <tr key={i}>

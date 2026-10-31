@@ -19,6 +19,11 @@ export default function ReportsView({ onNavigate }) {
   const [docSearch, setDocSearch] = useState('');
   const [patDocSearch, setPatDocSearch] = useState('');
   const [historySearch, setHistorySearch] = useState('');
+  const [histPage, setHistPage] = useState(1);
+  const [histPerPage, setHistPerPage] = useState(10);
+  const [dailySearch, setDailySearch] = useState('');
+  const [dailyPage, setDailyPage] = useState(1);
+  const [dailyPerPage, setDailyPerPage] = useState(10);
 
   const [areaGroups, setAreaGroups] = useState({});
   const [docGroups, setDocGroups] = useState({});
@@ -95,6 +100,29 @@ export default function ReportsView({ onNavigate }) {
       console.warn(e);
     }
   };
+
+  const filteredHistory = historyList.filter(h =>
+    !historySearch ||
+    (h.patientName || '').toLowerCase().includes(historySearch.toLowerCase()) ||
+    (h.patientId && String(h.patientId).includes(historySearch)) ||
+    (h.diagnosis && h.diagnosis.toLowerCase().includes(historySearch.toLowerCase())) ||
+    (h.complaint && h.complaint.toLowerCase().includes(historySearch.toLowerCase()))
+  );
+  const totalHistPages = histPerPage === 'all' ? 1 : Math.max(1, Math.ceil(filteredHistory.length / Number(histPerPage)));
+  const paginatedHist = histPerPage === 'all'
+    ? filteredHistory
+    : filteredHistory.slice((histPage - 1) * Number(histPerPage), histPage * Number(histPerPage));
+
+  const filteredDaily = dailyList.filter(d =>
+    !dailySearch ||
+    (d.patientName || '').toLowerCase().includes(dailySearch.toLowerCase()) ||
+    (d.caseId && d.caseId.toLowerCase().includes(dailySearch.toLowerCase())) ||
+    (d.headName && d.headName.toLowerCase().includes(dailySearch.toLowerCase()))
+  );
+  const totalDailyPages = dailyPerPage === 'all' ? 1 : Math.max(1, Math.ceil(filteredDaily.length / Number(dailyPerPage)));
+  const paginatedDaily = dailyPerPage === 'all'
+    ? filteredDaily
+    : filteredDaily.slice((dailyPage - 1) * Number(dailyPerPage), dailyPage * Number(dailyPerPage));
 
   return (
     <div className="cms-page-container" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -310,7 +338,7 @@ export default function ReportsView({ onNavigate }) {
               className="cms-input"
               placeholder="Type patient name or ID to filter visit history..."
               value={historySearch}
-              onChange={e => setHistorySearch(e.target.value)}
+              onChange={e => { setHistorySearch(e.target.value); setHistPage(1); }}
               style={{ width: '100%', height: '36px', fontSize: '13px', borderRadius: '6px' }}
             />
           </div>
@@ -362,6 +390,64 @@ export default function ReportsView({ onNavigate }) {
               </tbody>
             </table>
           </div>
+
+          {/* History Pagination Footer */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: '10px', paddingTop: '10px',
+            borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)'
+          }}>
+            <div>
+              Showing {filteredHistory.length === 0 ? 0 : (histPerPage === 'all' ? 1 : (histPage - 1) * Number(histPerPage) + 1)} to{' '}
+              {histPerPage === 'all' ? filteredHistory.length : Math.min(histPage * Number(histPerPage), filteredHistory.length)} of {filteredHistory.length} records
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Rows:</span>
+              <select
+                className="cms-input"
+                style={{ height: '28px', padding: '0 6px', fontSize: '12px' }}
+                value={histPerPage}
+                onChange={e => {
+                  setHistPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                  setHistPage(1);
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setHistPage(p => Math.max(1, p - 1))}
+                disabled={histPage === 1}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '4px', padding: '3px 8px', cursor: histPage > 1 ? 'pointer' : 'not-allowed',
+                  color: histPage > 1 ? 'var(--text)' : '#94a3b8', fontSize: '11px', fontWeight: 600
+                }}
+              >
+                ‹ Prev
+              </button>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                Page {histPage} of {totalHistPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setHistPage(p => Math.min(totalHistPages, p + 1))}
+                disabled={histPage === totalHistPages}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '4px', padding: '3px 8px', cursor: histPage < totalHistPages ? 'pointer' : 'not-allowed',
+                  color: histPage < totalHistPages ? 'var(--text)' : '#94a3b8', fontSize: '11px', fontWeight: 600
+                }}
+              >
+                Next ›
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -378,8 +464,19 @@ export default function ReportsView({ onNavigate }) {
                 Payment Collections Log
               </div>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669' }}>
-                Total: {fmtMoney(dailyList.reduce((s, v) => s + (Number(v.received) || 0), 0))}
+                Total: {fmtMoney(filteredDaily.reduce((s, v) => s + (Number(v.received) || 0), 0))}
               </div>
+            </div>
+            <div style={{ position: 'relative', width: '220px' }}>
+              <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '11px' }} />
+              <input
+                type="text"
+                className="cms-input"
+                placeholder="Search collections..."
+                value={dailySearch}
+                onChange={e => { setDailySearch(e.target.value); setDailyPage(1); }}
+                style={{ height: '32px', paddingLeft: '28px', fontSize: '12px', width: '100%' }}
+              />
             </div>
             <div style={{
               display: 'flex', alignItems: 'center', gap: '6px',
@@ -410,7 +507,7 @@ export default function ReportsView({ onNavigate }) {
                     </td>
                   </tr>
                 ) : (
-                  dailyList.map((item, idx) => (
+                  paginatedDaily.map((item, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                       <td style={{ padding: '10px 12px', fontSize: '12px' }}>{fmtDate(item.date)}</td>
                       <td className="font-mono" style={{ padding: '10px 12px', fontSize: '12px', fontWeight: 700 }}>{item.caseId}</td>
@@ -425,6 +522,64 @@ export default function ReportsView({ onNavigate }) {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Daily Collections Pagination Footer */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: '10px', paddingTop: '10px',
+            borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)'
+          }}>
+            <div>
+              Showing {filteredDaily.length === 0 ? 0 : (dailyPerPage === 'all' ? 1 : (dailyPage - 1) * Number(dailyPerPage) + 1)} to{' '}
+              {dailyPerPage === 'all' ? filteredDaily.length : Math.min(dailyPage * Number(dailyPerPage), filteredDaily.length)} of {filteredDaily.length} payments
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Rows:</span>
+              <select
+                className="cms-input"
+                style={{ height: '28px', padding: '0 6px', fontSize: '12px' }}
+                value={dailyPerPage}
+                onChange={e => {
+                  setDailyPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                  setDailyPage(1);
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setDailyPage(p => Math.max(1, p - 1))}
+                disabled={dailyPage === 1}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '4px', padding: '3px 8px', cursor: dailyPage > 1 ? 'pointer' : 'not-allowed',
+                  color: dailyPage > 1 ? 'var(--text)' : '#94a3b8', fontSize: '11px', fontWeight: 600
+                }}
+              >
+                ‹ Prev
+              </button>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                Page {dailyPage} of {totalDailyPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDailyPage(p => Math.min(totalDailyPages, p + 1))}
+                disabled={dailyPage === totalDailyPages}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '4px', padding: '3px 8px', cursor: dailyPage < totalDailyPages ? 'pointer' : 'not-allowed',
+                  color: dailyPage < totalDailyPages ? 'var(--text)' : '#94a3b8', fontSize: '11px', fontWeight: 600
+                }}
+              >
+                Next ›
+              </button>
+            </div>
           </div>
         </div>
       )}

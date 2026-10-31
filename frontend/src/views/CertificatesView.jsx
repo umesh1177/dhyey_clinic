@@ -51,6 +51,8 @@ export default function CertificatesView() {
   const [place, setPlace] = useState('Ahmedabad');
 
   const [filterQuery, setFilterQuery] = useState('');
+  const [certPage, setCertPage] = useState(1);
+  const [certPerPage, setCertPerPage] = useState(5);
 
   const docName = session?.profile?.name || 'Dr. Chirag Paghdal';
   const clinicName = activeClinic?.name || 'Dhyey Clinic & Nursing Home';
@@ -664,7 +666,7 @@ export default function CertificatesView() {
               </tr>
             </thead>
             <tbody>
-              {certificates.length === 0 ? (
+              {filteredCerts.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     No issued certificates found in database
@@ -730,14 +732,96 @@ export default function CertificatesView() {
             </tbody>
           </table>
         </div>
+
+        {/* Certificates Pagination Footer */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: '10px', padding: '12px 14px',
+          borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)'
+        }}>
+          <div>
+            Showing {filteredCerts.length === 0 ? 0 : (certPerPage === 'all' ? 1 : (certPage - 1) * Number(certPerPage) + 1)} to{' '}
+            {certPerPage === 'all' ? filteredCerts.length : Math.min(certPage * Number(certPerPage), filteredCerts.length)} of {filteredCerts.length} entries
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>Rows per page:</span>
+            <select
+              className="cms-input"
+              style={{ height: '28px', padding: '0 6px', fontSize: '12px' }}
+              value={certPerPage}
+              onChange={e => {
+                setCertPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                setCertPage(1);
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setCertPage(p => Math.max(1, p - 1))}
+              disabled={certPage === 1}
+              style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: '5px', padding: '4px 10px', cursor: certPage > 1 ? 'pointer' : 'not-allowed',
+                color: certPage > 1 ? 'var(--text)' : '#94a3b8', fontSize: '11.5px', fontWeight: 600
+              }}
+            >
+              &lt; Prev
+            </button>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+              Page {certPage} of {totalCertPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCertPage(p => Math.min(totalCertPages, p + 1))}
+              disabled={certPage === totalCertPages}
+              style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: '5px', padding: '4px 10px', cursor: certPage < totalCertPages ? 'pointer' : 'not-allowed',
+                color: certPage < totalCertPages ? 'var(--text)' : '#94a3b8', fontSize: '11.5px', fontWeight: 600
+              }}
+            >
+              Next &gt;
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ── MODAL 1: Doctor Digital Signature (Screenshot 4) ── */}
       {signatureModalOpen && (
-        <div className="cms-modal-backdrop active" onClick={() => setSignatureModalOpen(false)}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setSignatureModalOpen(false)}
+        >
           <div
-            className="cms-modal-dialog"
-            style={{ maxWidth: '620px', width: '92%', borderRadius: '14px', padding: '24px' }}
+            style={{
+              background: '#ffffff',
+              color: '#1e293b',
+              borderRadius: '14px',
+              maxWidth: '620px',
+              width: '100%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              padding: '24px',
+              position: 'relative',
+              zIndex: 1000000,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header matching Screenshot 4 */}
@@ -893,10 +977,34 @@ export default function CertificatesView() {
 
       {/* ── MODAL 2: Add New Certificate Template (Screenshot 5) ── */}
       {templateModalOpen && (
-        <div className="cms-modal-backdrop active" onClick={() => setTemplateModalOpen(false)}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setTemplateModalOpen(false)}
+        >
           <div
-            className="cms-modal-dialog"
-            style={{ maxWidth: '620px', width: '92%', borderRadius: '14px', padding: '24px' }}
+            style={{
+              background: '#ffffff',
+              color: '#1e293b',
+              borderRadius: '14px',
+              maxWidth: '620px',
+              width: '100%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              padding: '24px',
+              position: 'relative',
+              zIndex: 1000000,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header matching Screenshot 5 */}

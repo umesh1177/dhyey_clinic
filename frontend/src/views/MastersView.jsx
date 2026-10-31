@@ -170,6 +170,8 @@ export default function MastersView() {
   const [dietaryItems, setDietaryItems] = useState([]);
   const [genericItems, setGenericItems] = useState([]);
   const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [counts, setCounts] = useState({});
 
   // Modal State
@@ -371,7 +373,17 @@ export default function MastersView() {
     return (i.name || '').toLowerCase().includes(q) || (i.code || '').toLowerCase().includes(q) || (i.city || '').toLowerCase().includes(q) || (i.area || '').toLowerCase().includes(q);
   });
 
-  const totalCount = activeTab === 'dietary' ? filteredDietary.length : filteredGeneric.length;
+  const currentList = activeTab === 'dietary' ? filteredDietary : filteredGeneric;
+  const totalCount = currentList.length;
+  const totalPages = rowsPerPage === 'all' ? 1 : Math.max(1, Math.ceil(totalCount / Number(rowsPerPage)));
+
+  const paginatedDietary = rowsPerPage === 'all'
+    ? filteredDietary
+    : filteredDietary.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage));
+
+  const paginatedGeneric = rowsPerPage === 'all'
+    ? filteredGeneric
+    : filteredGeneric.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage));
 
   return (
     <div className="cms-page-container" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -417,7 +429,7 @@ export default function MastersView() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => { setActiveTab(tab.key); setFilter(''); }}
+              onClick={() => { setActiveTab(tab.key); setFilter(''); setPage(1); }}
               style={{
                 padding: '8px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700,
                 background: isActive ? 'var(--primary)' : 'var(--surface)',
@@ -466,7 +478,7 @@ export default function MastersView() {
                 style={{ height: '34px', width: '240px', paddingLeft: '30px', fontSize: '12px' }}
                 placeholder={`Search ${currentTabInfo.btnLabel.toLowerCase()} or code...`}
                 value={filter}
-                onChange={e => setFilter(e.target.value)}
+                onChange={e => { setFilter(e.target.value); setPage(1); }}
               />
             </div>
             <button
@@ -495,7 +507,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredDietary.map((d, idx) => (
+                {paginatedDietary.map((d, idx) => (
                   <tr key={d.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -550,7 +562,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -600,7 +612,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -650,7 +662,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -696,7 +708,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -747,7 +759,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -798,7 +810,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}
@@ -849,7 +861,7 @@ export default function MastersView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredGeneric.map((item, idx) => (
+                {paginatedGeneric.map((item, idx) => (
                   <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {idx + 1}

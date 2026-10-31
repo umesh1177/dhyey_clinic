@@ -106,6 +106,9 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   /* history filters */
   const [showDueOnly, setShowDueOnly]         = useState(false);
   const [historyDateFilter, setHistoryDateFilter] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPerPage, setHistoryPerPage] = useState(5);
 
   /* print */
   const [printingVisit, setPrintingVisit] = useState(null);
@@ -361,6 +364,22 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   let historyVisits = activePatient?.visits || [];
   if (showDueOnly) historyVisits = historyVisits.filter(v => Number(v.due) > 0);
   if (historyDateFilter) historyVisits = historyVisits.filter(v => v.date === historyDateFilter);
+  if (historySearch) {
+    const q = historySearch.toLowerCase().trim();
+    historyVisits = historyVisits.filter(v =>
+      (v.caseId && v.caseId.toLowerCase().includes(q)) ||
+      (v.complaint && v.complaint.toLowerCase().includes(q)) ||
+      (v.investigation && v.investigation.toLowerCase().includes(q)) ||
+      (v.diagnosis && v.diagnosis.toLowerCase().includes(q)) ||
+      (v.date && v.date.includes(q)) ||
+      (v.treatment && v.treatment.some(t => (t.name || '').toLowerCase().includes(q))) ||
+      (v.prescription && v.prescription.some(p => (p.name || '').toLowerCase().includes(q)))
+    );
+  }
+  const totalHistoryPages = historyPerPage === 'all' ? 1 : Math.max(1, Math.ceil(historyVisits.length / Number(historyPerPage)));
+  const paginatedHistory = historyPerPage === 'all'
+    ? historyVisits
+    : historyVisits.slice((historyPage - 1) * Number(historyPerPage), historyPage * Number(historyPerPage));
 
   const visitNum = (activePatient?.visits?.length || 0) + 1;
 
@@ -1046,9 +1065,21 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
             borderTop: '1px solid var(--border)', paddingTop: '12px',
           }}>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
-              CHARGE ₹ {charge}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>CHARGE ₹</span>
+              <input
+                type="number"
+                min="0"
+                className="cms-input font-mono"
+                style={{ width: '80px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
+                value={charge}
+                onChange={e => {
+                  const val = Math.max(0, Number(e.target.value) || 0);
+                  setCharge(val);
+                  setDue(Math.max(0, val - received));
+                }}
+              />
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>PAID ₹</span>
               <input
@@ -1132,7 +1163,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {historyVisits.map((v, idx) => {
+            {paginatedHistory.map((v, idx) => {
               const isFullCase = (hoveredCaseId === v.caseId || expandedCaseId === v.caseId || editingCaseId === v.caseId);
 
               if (isFullCase) {
@@ -1621,6 +1652,66 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Visit History Pagination Controls */}
+        {historyVisits.length > 0 && (
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: '10px', marginTop: '14px', paddingTop: '10px',
+            borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)'
+          }}>
+            <div>
+              Showing {historyVisits.length === 0 ? 0 : (historyPerPage === 'all' ? 1 : (historyPage - 1) * Number(historyPerPage) + 1)} to{' '}
+              {historyPerPage === 'all' ? historyVisits.length : Math.min(historyPage * Number(historyPerPage), historyVisits.length)} of {historyVisits.length} visits
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Rows:</span>
+              <select
+                className="cms-input"
+                style={{ height: '26px', padding: '0 6px', fontSize: '11.5px' }}
+                value={historyPerPage}
+                onChange={e => {
+                  setHistoryPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                  setHistoryPage(1);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                disabled={historyPage === 1}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '4px', padding: '2px 8px', cursor: historyPage > 1 ? 'pointer' : 'not-allowed',
+                  color: historyPage > 1 ? 'var(--text)' : '#94a3b8', fontSize: '11px', fontWeight: 600
+                }}
+              >
+                ‹ Prev
+              </button>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                {historyPage} / {totalHistoryPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
+                disabled={historyPage === totalHistoryPages}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '4px', padding: '2px 8px', cursor: historyPage < totalHistoryPages ? 'pointer' : 'not-allowed',
+                  color: historyPage < totalHistoryPages ? 'var(--text)' : '#94a3b8', fontSize: '11px', fontWeight: 600
+                }}
+              >
+                Next ›
+              </button>
+            </div>
           </div>
         )}
       </div>
