@@ -709,12 +709,12 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             }}>
               <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: {fmtMoney(personalDue)}
             </span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ color: 'var(--text)' }}>Age {activePatient.age || '—'}</span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ color: 'var(--text)' }}>{activePatient.bloodGroup || 'O+'}</span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ color: '#dc2626', fontWeight: 700 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '12.5px' }}>·</span>
+            <span style={{ color: 'var(--text)' , fontSize: '12.5px'}}>Age {activePatient.age || '—'}</span>
+            <span style={{ color: 'var(--text-muted)' , fontSize: '12.5px' }}>·</span>
+            <span style={{ color: 'var(--text)' , fontSize: '12.5px' }}>{activePatient.bloodGroup || 'O+'}</span>
+            <span style={{ color: 'var(--text-muted)' , fontSize: '12.5px'}}>·</span>
+            <span style={{ color: '#dc2626', fontWeight: 700 , fontSize: '12.5px'}}>
               Allergy: {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' ? activePatient.allergy : 'Dust / Pollen'}
             </span>
           </div>
