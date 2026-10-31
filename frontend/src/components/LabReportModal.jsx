@@ -500,3 +500,4 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
     </div>
   );
 }
+

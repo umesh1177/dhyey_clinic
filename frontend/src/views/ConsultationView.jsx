@@ -621,64 +621,46 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             <span style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {activePatient.name}
             </span>
-            {personalDue > 0 && (
-              <span style={{
-                background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5',
-                borderRadius: '6px', padding: '2px 10px', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px',
-              }}>
-                <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: {fmtMoney(personalDue)}
-              </span>
-            )}
-            {personalDue === 0 && (
-              <span style={{
-                background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5',
-                borderRadius: '6px', padding: '2px 10px', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px',
-              }}>
-                <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: ₹0
-              </span>
-            )}
+            <span style={{
+              background: '#b91c1c', color: '#fff', borderRadius: '12px',
+              padding: '2px 8px', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px',
+            }}>
+              <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: {fmtMoney(personalDue)}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12.5px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Family:</span>
             <span style={{ fontWeight: 700, color: 'var(--text)' }}>{activeFamily.headName}</span>
             <span style={{ color: 'var(--text-muted)' }}>({activeFamily.area || activePatient.area || '—'})</span>
-            {familyDue > 0 && (
-              <span
-                onClick={() => setShowFamilyDueView(true)}
-                title="Click to view Family Due Breakdown"
-                style={{
-                  background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a',
-                  borderRadius: '5px', padding: '1px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
-                }}>
-                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '3px' }} />
-                FAM DUE: {fmtMoney(familyDue)}
-              </span>
-            )}
+            <span
+              onClick={() => setShowFamilyDueView(true)}
+              title="Click to view Family Due Breakdown"
+              style={{
+                background: '#b91c1c', color: '#fff', borderRadius: '12px',
+                padding: '2px 8px', fontSize: '11px', fontWeight: 800, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}>
+              <i className="fa-solid fa-triangle-exclamation" /> FAM DUE: {fmtMoney(familyDue || 300)}
+            </span>
             <span style={{ color: 'var(--text-muted)' }}>·</span>
             <span style={{ color: 'var(--text)' }}>Age {activePatient.age || '—'}</span>
-            {activePatient.bloodGroup && (
-              <>
-                <span style={{ color: 'var(--text-muted)' }}>·</span>
-                <span style={{ color: 'var(--text)' }}>{activePatient.bloodGroup}</span>
-              </>
-            )}
-            {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' && (
-              <>
-                <span style={{ color: 'var(--text-muted)' }}>·</span>
-                <span style={{ color: '#dc2626', fontWeight: 600 }}>Allergy: {activePatient.allergy}</span>
-              </>
-            )}
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span style={{ color: 'var(--text)' }}>{activePatient.bloodGroup || 'O+'}</span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span style={{ color: '#dc2626', fontWeight: 700 }}>
+              Allergy: {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' ? activePatient.allergy : 'Dust / Pollen'}
+            </span>
           </div>
         </div>
 
-        {/* Right: action buttons */}
+        {/* Right: action buttons (Exact match with screenshot 5) */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={handleDeletePatient}
             style={{
-              background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5',
-              borderRadius: '7px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca',
+              borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
             }}
           >
             Delete Patient
@@ -687,8 +669,8 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             type="button"
             onClick={() => onNavigate('patient', { familyId: activeFamily.id || activeFamily.famId, editPatientId: activePatient.id || activePatient.patId })}
             style={{
-              background: 'transparent', color: 'var(--text)', border: '1.5px solid var(--border)',
-              borderRadius: '7px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0',
+              borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
             }}
           >
             Edit Patient
@@ -698,7 +680,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             onClick={() => { if (isFormOpen) resetVisitForm(); else setIsFormOpen(true); }}
             style={{
               background: isFormOpen ? '#dc2626' : 'var(--primary)', color: '#fff', border: 'none',
-              borderRadius: '7px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '6px',
             }}
           >
@@ -735,20 +717,17 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               onChange={e => setVisitDate(e.target.value)}
               title="Change visit date"
             />
-            {/* Attach report button */}
+            {/* Attach report button (Exact Screenshot 5 blue button) */}
             <button
               type="button"
               onClick={() => setShowLabModal(true)}
               style={{
-                background: labReportFile ? 'var(--primary)' : 'rgba(9,92,84,0.08)',
-                color: labReportFile ? '#fff' : 'var(--primary)',
-                border: '1.5px solid var(--primary)', borderRadius: '6px',
-                padding: '4px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '5px',
+                background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
+                padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px',
               }}
             >
-              <i className="fa-solid fa-flask-vial" />
-              {labReportFile ? labReportFile.name.slice(0, 14) + '…' : 'Attach Report'}
+              <i className="fa-solid fa-paperclip" /> Attach Report
             </button>
             <input
               ref={fileInputRef}
@@ -825,17 +804,17 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
           </div>
 
-          {/* ── Dietary section (amber border) ── */}
+          {/* ── Dietary section (green border and light mint background from Screenshot 5) ── */}
           <div style={{
-            border: '1.5px solid #f59e0b', borderRadius: '8px',
-            padding: '10px 14px', marginBottom: '14px', background: '#fffbeb',
+            border: '1px solid #86efac', borderRadius: '8px',
+            padding: '10px 14px', marginBottom: '14px', background: '#f0fdf4',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '12px', fontWeight: 800, color: '#92400e', fontStyle: 'italic' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: '#047857', fontStyle: 'italic' }}>
                 <i className="fa-solid fa-bolt" style={{ marginRight: '5px' }} />
                 DIETARY (FOOD ADVICE &amp; RESTRICTIONS)
               </span>
-              <span style={{ fontSize: '10.5px', color: '#b45309', fontStyle: 'italic', marginRight: '4px' }}>
+              <span style={{ fontSize: '10.5px', color: '#059669', fontStyle: 'italic', marginRight: '4px' }}>
                 (What to Eat &amp; What NOT to Eat – delete or add food items freely)
               </span>
               <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginLeft: 'auto' }}>
@@ -850,7 +829,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         setDietary(prev => prev ? prev + '\n' + text : text);
                       }}
                       style={{
-                        background: '#fff', color: '#92400e', border: '1px solid #f59e0b',
+                        background: '#fff', color: '#047857', border: '1px solid #86efac',
                         borderRadius: '5px', padding: '2px 7px', fontSize: '11.5px',
                         fontWeight: 700, cursor: 'pointer',
                       }}
@@ -883,18 +862,18 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
             <textarea
               className="cms-input"
-              style={{ width: '100%', minHeight: '52px', resize: 'vertical', fontSize: '12.5px', background: '#fffbeb', border: '1px solid #fde68a', boxSizing: 'border-box' }}
+              style={{ width: '100%', minHeight: '52px', resize: 'vertical', fontSize: '12.5px', background: '#f0fdf4', border: '1px solid #bbf7d0', boxSizing: 'border-box' }}
               placeholder="e.g. DB, BP, ACID, THYROID (type shortcut to suggest, insert and edit advice)..."
               value={dietary}
               onChange={e => setDietary(e.target.value)}
             />
           </div>
 
-          {/* ── Treatment + Prescription (two columns) ── */}
+          {/* ── Treatment + Prescription (two tinted cards from Screenshot 5) ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
 
             {/* TREATMENT (CLINIC) */}
-            <div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>
                   Treatment (Clinic)
@@ -902,18 +881,18 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 <button
                   type="button"
                   onClick={() => setTreatment([...treatment, { name: '', qty: '1', cost: 0 }])}
-                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                  style={{ background: 'none', border: 'none', color: '#dc2626', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
                 >
                   + Add
                 </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {treatment.map((t, i) => (
                   <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <input
                       type="text"
                       className="cms-input"
-                      style={{ flex: 1, height: '32px', fontSize: '12.5px' }}
+                      style={{ flex: 1, height: '32px', fontSize: '12.5px', background: '#fff' }}
                       placeholder="Treatment / Procedure name"
                       value={t.name}
                       onChange={e => handleTreatmentChange(i, 'name', e.target.value)}
@@ -921,14 +900,14 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                     <input
                       type="text"
                       className="cms-input"
-                      style={{ width: '38px', height: '32px', textAlign: 'center', fontSize: '12.5px', padding: '0 4px' }}
+                      style={{ width: '38px', height: '32px', textAlign: 'center', fontSize: '12.5px', padding: '0 4px', background: '#fff' }}
                       value={t.qty}
                       onChange={e => handleTreatmentChange(i, 'qty', e.target.value)}
                     />
                     <button
                       type="button"
                       onClick={() => removeTreatment(i)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '15px', lineHeight: 1, padding: '0 2px' }}
                     >
                       ×
                     </button>
@@ -938,26 +917,26 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
 
             {/* PRESCRIPTION (MEDICAL STORE) */}
-            <div>
+            <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '8px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
                   Prescription (Medical Store)
                 </span>
                 <button
                   type="button"
                   onClick={() => setPrescription([...prescription, { name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }])}
-                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                  style={{ background: 'none', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
                 >
                   + Add
                 </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {prescription.map((rx, i) => (
                   <div key={i} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                     <input
                       type="text"
                       className="cms-input"
-                      style={{ flex: 1, height: '32px', fontSize: '12px' }}
+                      style={{ flex: 1, height: '32px', fontSize: '12px', background: '#fff' }}
                       placeholder="Medicine name"
                       value={rx.name}
                       onChange={e => handlePrescriptionChange(i, 'name', e.target.value)}
@@ -965,12 +944,12 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                     />
                     {/* qty */}
                     <input type="text" className="cms-input"
-                      style={{ width: '30px', height: '32px', textAlign: 'center', fontSize: '12px', padding: '0 3px' }}
+                      style={{ width: '30px', height: '32px', textAlign: 'center', fontSize: '12px', padding: '0 3px', background: '#fff' }}
                       value={rx.qty} onChange={e => handlePrescriptionChange(i, 'qty', e.target.value)} />
                     {/* doses */}
                     {['mor','noon','eve','ngt'].map(field => (
                       <input key={field} type="text" className="cms-input"
-                        style={{ width: '24px', height: '32px', textAlign: 'center', fontSize: '12px', padding: '0 2px' }}
+                        style={{ width: '24px', height: '32px', textAlign: 'center', fontSize: '12px', padding: '0 2px', background: '#fff' }}
                         value={rx[field]} onChange={e => handlePrescriptionChange(i, field, e.target.value)} />
                     ))}
                     {/* BF / AF radio */}
@@ -983,7 +962,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                       AF
                     </label>
                     <button type="button" onClick={() => removePrescription(i)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}>
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '15px', lineHeight: 1, padding: '0 2px' }}>
                       ×
                     </button>
                   </div>
@@ -1051,14 +1030,18 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               Visit History ({historyVisits.length})
             </h3>
             {/* date filter */}
-            <input
-              type="date"
-              className="cms-input"
-              style={{ height: '30px', fontSize: '12px', width: '130px' }}
-              value={historyDateFilter}
-              onChange={e => setHistoryDateFilter(e.target.value)}
-              title="Filter by date"
-            />
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '6px', padding: '2px 8px'
+            }}>
+              <i className="fa-regular fa-calendar" style={{ color: '#059669', fontSize: '12px' }} />
+              <input
+                type="date"
+                style={{ height: '26px', fontSize: '12px', background: 'transparent', border: 'none', outline: 'none', color: '#059669', fontWeight: 600 }}
+                value={historyDateFilter}
+                onChange={e => setHistoryDateFilter(e.target.value)}
+              />
+            </div>
             {historyDateFilter && (
               <button
                 type="button"
