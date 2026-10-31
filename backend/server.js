@@ -884,12 +884,14 @@ app.post(['/api/families', '/api/family'], authMiddleware, async (req, res) => {
     const currentYear = new Date().getFullYear();
     const cleanClinicCode = (clinicId === 'demo' ? '0001' : (String(clinicId).replace(/\D/g, '') || String(clinicId).toUpperCase().replace(/[^A-Z0-9]/g, '')).padStart(4, '0').slice(-4)) || '0001';
 
-    const countFam = await Family.countDocuments({ clinicId, year: currentYear });
-    const sequence = countFam + 1;
-    const nextFamId = customFamId || `${cleanClinicCode}${currentYear}${pad(sequence, 4)}`;
-
-    const famSeqCode = pad(sequence, 4);
-    const nextPatId = `${famSeqCode}0001`;
+    const allFam = await Family.find({}, { sequence: 1, famId: 1 });
+    const maxSeq = allFam.reduce((max, f) => {
+      const s = Number(f.sequence || f.famId || 0);
+      return !isNaN(s) && s > max ? s : max;
+    }, 0);
+    const sequence = maxSeq + 1;
+    const nextFamId = customFamId ? String(customFamId).trim() : String(sequence);
+    const nextPatId = `${nextFamId}01`;
 
     const newFamily = new Family({
       famId: nextFamId,
@@ -1072,9 +1074,8 @@ app.post(['/api/patients', '/api/patient'], authMiddleware, async (req, res) => 
       return res.status(404).json({ success: false, message: 'Family not found' });
     }
 
-    const famSeqCode = (familyId || '').slice(-4) || pad(family.sequence || 1, 4);
-    const memberCount = await Patient.countDocuments({ familyId, clinicId });
-    const nextPatId = `${famSeqCode}${pad(memberCount + 1, 4)}`;
+    const memberCount = await Patient.countDocuments({ familyId });
+    const nextPatId = req.body.patId || `${familyId}${pad(memberCount + 1, 2)}`;
 
     const newPatient = new Patient({
       patId: nextPatId,
@@ -1239,6 +1240,8 @@ app.post(['/api/consultations', '/api/consultation'], authMiddleware, async (req
       complaint: String(complaint || '').trim(),
       diagnosis: String(diagnosis || '').trim(),
       dietary: String(dietary || '').trim(),
+      labReport: req.body.labReport || null,
+      labReportFile: String(req.body.labReportFile || '').trim(),
       treatment: (treatment || []).filter(t => t && t.name && String(t.name).trim()),
       prescription: (prescription || []).filter(p => p && p.name && String(p.name).trim()),
       charge: chargeNum,
@@ -1326,8 +1329,12 @@ app.put(['/api/consultations/:id', '/api/consultation/:id'], authMiddleware, asy
       due: dueNum,
     };
 
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { caseId: id }] }
+      : { caseId: id };
+
     const updated = await Consultation.findOneAndUpdate(
-      { $or: [{ _id: id }, { caseId: id }], clinicId },
+      query,
       updateData,
       { new: true }
     );
@@ -1347,11 +1354,15 @@ app.delete(['/api/consultations/:id', '/api/consultation/:id'], authMiddleware, 
     const { id } = req.params;
     const clinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'demo';
 
-    const deleted = await Consultation.findOneAndDelete({ $or: [{ _id: id }, { caseId: id }], clinicId });
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { caseId: id }] }
+      : { caseId: id };
+
+    const deleted = await Consultation.findOneAndDelete(query);
     if (deleted && deleted.caseId) {
-      await Prescription.deleteMany({ caseId: deleted.caseId, clinicId });
-      await Bill.deleteMany({ caseId: deleted.caseId, clinicId });
-      await Payment.deleteMany({ caseId: deleted.caseId, clinicId });
+      await Prescription.deleteMany({ caseId: deleted.caseId });
+      await Bill.deleteMany({ caseId: deleted.caseId });
+      await Payment.deleteMany({ caseId: deleted.caseId });
     }
     res.json({ success: true, message: 'Visit deleted successfully' });
   } catch (error) {
@@ -2193,18 +2204,37 @@ app.get(['/api/masters/:type', '/api/master/:type'], async (req, res) => {
   }
 });
 
-app.post(['/api/masters/:type', '/api/master/:type'], authMiddleware, async (req, res) => {
+app.post(['/api/masters/:type', '/api/master/:type'], async (req, res) => {
   try {
     const { type } = req.params;
-    const { items } = req.body;
+    let { items, item } = req.body;
 
-    if (items === undefined) {
-      return res.status(400).json({ success: false, message: 'items payload is required' });
+    let doc = await MasterData.findOne({ type });
+    let existingItems = doc && Array.isArray(doc.items) ? [...doc.items] : [];
+
+    if (Array.isArray(items)) {
+      existingItems = items;
+    } else if (item) {
+      const idx = existingItems.findIndex(i => i.id === item.id);
+      if (idx >= 0) existingItems[idx] = item;
+      else existingItems.push(item);
+    } else if (req.body.name || req.body.code || req.body.eat) {
+      const newItem = {
+        id: `${type}_${Date.now()}`,
+        code: req.body.code ? String(req.body.code).trim().toUpperCase() : undefined,
+        name: req.body.name ? String(req.body.name).trim() : (req.body.eat || ''),
+        eat: req.body.eat ? String(req.body.eat).trim() : undefined,
+        notEat: req.body.notEat ? String(req.body.notEat).trim() : undefined,
+        city: req.body.city ? String(req.body.city).trim() : undefined,
+        area: req.body.area ? String(req.body.area).trim() : undefined,
+        createdAt: new Date().toLocaleDateString('en-GB'),
+      };
+      existingItems.push(newItem);
     }
 
     const updated = await MasterData.findOneAndUpdate(
       { type },
-      { clinicId: 'shared', type, items },
+      { clinicId: 'shared', type, items: existingItems },
       { new: true, upsert: true }
     );
 

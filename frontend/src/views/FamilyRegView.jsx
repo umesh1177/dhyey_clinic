@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   apiFetch,
   generateFamilyId, showToast, getSharedMasterCollection, pad,
+  fetchMasterCollectionFromDB, expandShortcut, findMasterMatch,
 } from '../services/api';
 
 const BLOOD_GROUPS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -32,10 +33,18 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   const [registeredBy, setRegisteredBy] = useState('Self (Head of Family)');
   const [sequence, setSequence] = useState(1);
   const [generatedFamId, setGeneratedFamId] = useState('');
+  const [allergiesMaster, setAllergiesMaster] = useState([]);
+  const [areasMaster, setAreasMaster] = useState([]);
+  const [societiesMaster, setSocietiesMaster] = useState([]);
 
   const headNameRef = useRef();
 
-  useEffect(() => { loadFamilies(); }, [clinicId]);
+  useEffect(() => {
+    loadFamilies();
+    fetchMasterCollectionFromDB('allergies').then(d => setAllergiesMaster(d || []));
+    fetchMasterCollectionFromDB('areas').then(d => setAreasMaster(d || []));
+    fetchMasterCollectionFromDB('societies').then(d => setSocietiesMaster(d || []));
+  }, [clinicId]);
 
   const loadFamilies = async () => {
     try {
@@ -43,9 +52,9 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
       const list = res.data || [];
       list.sort((a, b) => (b.sequence || 0) - (a.sequence || 0));
       setFamilies(list);
-      const nextSeq = list.length > 0 ? Math.max(...list.map((f) => Number(f.sequence || 0))) + 1 : 1;
+      const nextSeq = list.length > 0 ? Math.max(...list.map((f) => Number(f.sequence || f.famId || 0))) + 1 : 1;
       setSequence(nextSeq);
-      setGeneratedFamId(generateFamilyId(clinicId, currentYear, nextSeq));
+      setGeneratedFamId(String(nextSeq));
     } catch (err) {
       console.error(err);
       showToast(err.message || 'Failed to load families from database', 'error');
@@ -55,7 +64,7 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   const handleSequenceChange = (val) => {
     const n = Number(val) || 1;
     setSequence(n);
-    setGeneratedFamId(generateFamilyId(clinicId, currentYear, n));
+    setGeneratedFamId(String(n));
   };
 
   const handleSubmit = async (e) => {
@@ -81,7 +90,7 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
         showToast('Family updated in database.');
         setEditingFamId(null);
       } else {
-        await apiFetch('/families', {
+        const res = await apiFetch('/families', {
           method: 'POST',
           body: {
             famId,
@@ -95,7 +104,33 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
             registeredBy,
           },
         });
-        showToast(`Family ${famId} registered in database!`);
+
+        const savedFam = res.data?.family || { famId };
+        const savedPat = res.data?.headPatient || { patId: `${famId}01` };
+
+        resetForm();
+        await loadFamilies();
+
+        if (registeredBy && registeredBy.toLowerCase().includes('member')) {
+          showToast(`Family #${savedFam.famId} registered! Add member details:`);
+          onNavigate('patient', {
+            familyId: savedFam.famId,
+            initialData: {
+              society: society.trim(),
+              area: area.trim(),
+              phone: phone.trim(),
+            }
+          });
+          return;
+        } else {
+          showToast(`Family #${savedFam.famId} registered! Opening patient record & case history...`);
+          onNavigate('case', {
+            familyId: savedFam.famId,
+            patientId: savedPat.patId,
+            openHistory: true,
+          });
+          return;
+        }
       }
       resetForm();
       await loadFamilies();
@@ -108,9 +143,9 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
     setHeadName(''); setAge(''); setBloodGroup(''); setAllergy('');
     setPhone(''); setSociety(''); setArea(''); setRegisteredBy('Self (Head of Family)');
     setEditingFamId(null);
-    const nextSeq = families.length > 0 ? Math.max(...families.map((f) => Number(f.sequence || 0))) + 1 : 1;
+    const nextSeq = families.length > 0 ? Math.max(...families.map((f) => Number(f.sequence || f.famId || 0))) + 1 : 1;
     setSequence(nextSeq);
-    setGeneratedFamId(generateFamilyId(clinicId, currentYear, nextSeq));
+    setGeneratedFamId(String(nextSeq));
     setTimeout(() => headNameRef.current?.focus(), 100);
   };
 
@@ -254,8 +289,26 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Known Allergies</label>
-            <input type="text" className="cms-input" placeholder="e.g. Penicillin, None" value={allergy} onChange={(e) => setAllergy(e.target.value)} />
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Known Allergies (Shortcut + Enter)</label>
+            <input
+              type="text"
+              className="cms-input"
+              placeholder="e.g. PEN -> Penicillin, "
+              value={allergy}
+              onChange={(e) => setAllergy(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setAllergy(expandShortcut(allergy, allergiesMaster));
+                }
+              }}
+              list="fam-allergies-list"
+            />
+            <datalist id="fam-allergies-list">
+              {allergiesMaster.map(a => (
+                <option key={a.id || a.code || a.name} value={a.code ? `${a.code} - ${a.name}` : a.name} />
+              ))}
+            </datalist>
           </div>
         </div>
 
@@ -263,11 +316,41 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Society / Flat</label>
-            <input type="text" className="cms-input" placeholder="e.g. Shanti Niketan" value={society} onChange={(e) => setSociety(e.target.value)} />
+            <input
+              type="text"
+              className="cms-input"
+              placeholder="e.g. Shanti Niketan"
+              value={society}
+              onChange={(e) => setSociety(e.target.value)}
+              list="fam-societies-list"
+            />
+            <datalist id="fam-societies-list">
+              {societiesMaster.map(s => (
+                <option key={s.id || s.name} value={s.name} />
+              ))}
+            </datalist>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Area / Location</label>
-            <input type="text" className="cms-input" placeholder="e.g. Vastrapur, Satellite" value={area} onChange={(e) => setArea(e.target.value.toUpperCase())} />
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Area / Location (Enter to match)</label>
+            <input
+              type="text"
+              className="cms-input"
+              placeholder="e.g. Vastrapur"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setArea(findMasterMatch(area, areasMaster));
+                }
+              }}
+              list="fam-areas-list"
+            />
+            <datalist id="fam-areas-list">
+              {areasMaster.map(a => (
+                <option key={a.id || a.name} value={a.name} />
+              ))}
+            </datalist>
           </div>
         </div>
 

@@ -120,7 +120,7 @@ export default function App() {
         return (
           <PatientRegView
             initialFamilyId={currentSelection.familyId}
-            initialPatientId={currentSelection.patientId}
+            initialPatientId={currentSelection.patientId || currentSelection.editPatientId}
             onNavigate={navigateTo}
             onSelectPatient={handleSelectPatient}
           />

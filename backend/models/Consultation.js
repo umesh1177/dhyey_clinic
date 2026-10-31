@@ -36,6 +36,8 @@ const ConsultationSchema = new mongoose.Schema(
     diagnosis: { type: String, default: '' },
     investigation: { type: String, default: '' },
     dietary: { type: String, default: '' },
+    labReport: { type: mongoose.Schema.Types.Mixed, default: null },
+    labReportFile: { type: String, default: '' },
     treatment: [TreatmentItemSchema],
     prescription: [PrescriptionItemSchema],
     charge: { type: Number, default: 0 },

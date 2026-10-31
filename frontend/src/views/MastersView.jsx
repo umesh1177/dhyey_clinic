@@ -291,6 +291,10 @@ export default function MastersView() {
         showToast(err.message || 'Failed to save to database', 'error');
       }
     } else {
+      if (!formName.trim()) {
+        showToast('Name is required.', 'error');
+        return;
+      }
       let updated;
       if (editingItem) {
         updated = genericItems.map(item => item.id === editingItem.id ? {
@@ -307,15 +311,17 @@ export default function MastersView() {
           name: formName.trim(),
           city: activeTab === 'areas' ? formCity.trim() : undefined,
           area: activeTab === 'societies' ? formArea.trim() : undefined,
-          createdAt: '01/01/2026',
+          createdAt: new Date().toLocaleDateString('en-GB'),
         };
         updated = [...genericItems, newItem];
       }
       setGenericItems(updated);
+      saveSharedMasterCollection(activeTab, updated);
       try {
         await apiFetch(`/masters/${activeTab}`, { method: 'POST', body: { items: updated } });
-        showToast(editingItem ? `Updated ${formName || editingItem.name}` : `Added ${formName}`);
-        loadAllCounts();
+        showToast(editingItem ? `Updated ${formName || editingItem.name} in database` : `Added ${formName} to database`);
+        await loadTabItems(activeTab);
+        await loadAllCounts();
       } catch (err) {
         showToast(err.message || 'Failed to save to database', 'error');
       }

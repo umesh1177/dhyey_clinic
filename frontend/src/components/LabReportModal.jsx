@@ -1,141 +1,385 @@
 import React, { useState } from 'react';
 
-export default function LabReportModal({ patient, family, doctorName = 'Dr. Chirag Paghdal', caseNo, onClose, onSave }) {
+const REFERENCE_RANGES = {
+  // Routine Hematology CBC
+  hemoglobin: { min: 12.0, max: 16.0 },
+  rbcCount: { min: 4.2, max: 5.4 },
+  wbcCount: { min: 4000, max: 10000 },
+  plateletCount: { min: 150000, max: 400000 },
+  esr: { min: 2, max: 20 },
+  // Differential WBC
+  bandCell: { min: 0, max: 6 },
+  neutrophils: { min: 55, max: 70 },
+  lymphocytes: { min: 20, max: 40 },
+  eosinophils: { min: 1, max: 6 },
+  monocytes: { min: 2, max: 8 },
+  basophils: { min: 0, max: 1 },
+  // Blood Glucose & Renal
+  rbs: { min: 60, max: 120 },
+  fbs: { min: 70, max: 100 },
+  ppbs: { min: 70, max: 140 },
+  creatinin: { min: 0.5, max: 1.5 },
+  vitaminB12: { min: 200, max: 900 },
+  // Thyroid
+  t3: { min: 82, max: 200 },
+  t4: { min: 4.5, max: 12.5 },
+  tsh: { min: 0.4, max: 6.0 },
+  // Urine Microscopic
+  pusCells: { min: 0, max: 5 },
+  epithelialCells: { min: 1, max: 4 },
+  rbcUrine: { min: 0, max: 2 },
+  // Hepatic
+  biliTotal: { min: 0.2, max: 1.0 },
+  biliDirect: { min: 0.0, max: 0.3 },
+  biliIndirect: { min: 0.1, max: 1.0 },
+  sgpt: { min: 10, max: 40 },
+};
+
+function checkIsOutOfRange(key, value) {
+  if (!value || String(value).trim() === '') return false;
+  const range = REFERENCE_RANGES[key];
+  if (!range) return false;
+  const num = parseFloat(String(value).trim());
+  if (isNaN(num)) return false;
+  return num < range.min || num > range.max;
+}
+
+export default function LabReportModal({
+  patient,
+  family,
+  doctorName = 'Dr. Chirag Paghdal',
+  caseNo,
+  onClose,
+  onSave,
+  initialReport = null,
+}) {
   const [activeTab, setActiveTab] = useState('hematology');
 
   // General details
-  const [labName, setLabName] = useState('Diagnostic Laboratory Name');
-  const [entryDate, setEntryDate] = useState('31-10-2026');
+  const [labName, setLabName] = useState(initialReport?.labName || 'Diagnostic Laboratory Name');
+  const [entryDate, setEntryDate] = useState(
+    initialReport?.entryDate || new Date().toLocaleDateString('en-GB').replace(/\//g, '-')
+  );
 
-  // Hematology fields
-  const [hemoglobin, setHemoglobin] = useState('12.0-16.0');
-  const [rbcCount, setRbcCount] = useState('4.2-5.4');
-  const [wbcCount, setWbcCount] = useState('4000-10000');
-  const [plateletCount, setPlateletCount] = useState('150000-40000');
-  const [esr, setEsr] = useState('2-20');
+  // Hematology fields - default empty
+  const [hemoglobin, setHemoglobin] = useState(initialReport?.hemoglobin || '');
+  const [rbcCount, setRbcCount] = useState(initialReport?.rbcCount || '');
+  const [wbcCount, setWbcCount] = useState(initialReport?.wbcCount || '');
+  const [plateletCount, setPlateletCount] = useState(initialReport?.plateletCount || '');
+  const [esr, setEsr] = useState(initialReport?.esr || '');
+
   // Differential WBC
-  const [bandCell, setBandCell] = useState('0-6');
-  const [neutrophils, setNeutrophils] = useState('55-70');
-  const [lymphocytes, setLymphocytes] = useState('20-40');
-  const [eosinophils, setEosinophils] = useState('1-6');
-  const [monocytes, setMonocytes] = useState('2-8');
-  const [basophils, setBasophils] = useState('0-1');
-  const [parasites, setParasites] = useState('');
+  const [bandCell, setBandCell] = useState(initialReport?.bandCell || '');
+  const [neutrophils, setNeutrophils] = useState(initialReport?.neutrophils || '');
+  const [lymphocytes, setLymphocytes] = useState(initialReport?.lymphocytes || '');
+  const [eosinophils, setEosinophils] = useState(initialReport?.eosinophils || '');
+  const [monocytes, setMonocytes] = useState(initialReport?.monocytes || '');
+  const [basophils, setBasophils] = useState(initialReport?.basophils || '');
+  const [parasites, setParasites] = useState(initialReport?.parasites || '');
+
   // Blood Glucose & Renal
-  const [rbs, setRbs] = useState('60-120');
-  const [fbs, setFbs] = useState('70-100');
-  const [ppbs, setPpbs] = useState('70-140');
-  const [creatinin, setCreatinin] = useState('0.5-1.5');
-  const [vitaminB12, setVitaminB12] = useState('200-900');
+  const [rbs, setRbs] = useState(initialReport?.rbs || '');
+  const [fbs, setFbs] = useState(initialReport?.fbs || '');
+  const [ppbs, setPpbs] = useState(initialReport?.ppbs || '');
+  const [creatinin, setCreatinin] = useState(initialReport?.creatinin || '');
+  const [vitaminB12, setVitaminB12] = useState(initialReport?.vitaminB12 || '');
+
   // Thyroid
-  const [t3, setT3] = useState('82-200');
-  const [t4, setT4] = useState('4.5-12.5');
-  const [tsh, setTsh] = useState('0.4-6.0');
+  const [t3, setT3] = useState(initialReport?.t3 || '');
+  const [t4, setT4] = useState(initialReport?.t4 || '');
+  const [tsh, setTsh] = useState(initialReport?.tsh || '');
 
   // Urine fields
-  const [quantity, setQuantity] = useState('');
-  const [color, setColor] = useState('');
-  const [appearance, setAppearance] = useState('');
-  const [spGravity, setSpGravity] = useState('');
-  const [reactionPh, setReactionPh] = useState('');
-  const [albumin, setAlbumin] = useState('');
-  const [sugar, setSugar] = useState('');
-  const [bileSalts, setBileSalts] = useState('');
-  const [ketoneBodies, setKetoneBodies] = useState('');
-  const [pusCells, setPusCells] = useState('0-5');
-  const [epithelialCells, setEpithelialCells] = useState('1-4');
-  const [rbcUrine, setRbcUrine] = useState('0-2');
-  const [crystals, setCrystals] = useState('');
-  const [casts, setCasts] = useState('');
-  const [bacteria, setBacteria] = useState('');
-  const [otherUrine, setOtherUrine] = useState('Mucus / Nil');
+  const [quantity, setQuantity] = useState(initialReport?.quantity || '');
+  const [color, setColor] = useState(initialReport?.color || '');
+  const [appearance, setAppearance] = useState(initialReport?.appearance || '');
+  const [spGravity, setSpGravity] = useState(initialReport?.spGravity || '');
+  const [reactionPh, setReactionPh] = useState(initialReport?.reactionPh || '');
+  const [albumin, setAlbumin] = useState(initialReport?.albumin || '');
+  const [sugar, setSugar] = useState(initialReport?.sugar || '');
+  const [bileSalts, setBileSalts] = useState(initialReport?.bileSalts || '');
+  const [ketoneBodies, setKetoneBodies] = useState(initialReport?.ketoneBodies || '');
+  const [pusCells, setPusCells] = useState(initialReport?.pusCells || '');
+  const [epithelialCells, setEpithelialCells] = useState(initialReport?.epithelialCells || '');
+  const [rbcUrine, setRbcUrine] = useState(initialReport?.rbcUrine || '');
+  const [crystals, setCrystals] = useState(initialReport?.crystals || '');
+  const [casts, setCasts] = useState(initialReport?.casts || '');
+  const [bacteria, setBacteria] = useState(initialReport?.bacteria || '');
+  const [otherUrine, setOtherUrine] = useState(initialReport?.otherUrine || '');
 
   // Other Reports
-  const [biliTotal, setBiliTotal] = useState('0.2-1.0');
-  const [biliDirect, setBiliDirect] = useState('0.0-0.3');
-  const [biliIndirect, setBiliIndirect] = useState('0.1-1.0');
-  const [sgpt, setSgpt] = useState('10-40');
-  const [g6pd, setG6pd] = useState('');
-  const [hivTest, setHivTest] = useState('');
-  const [typhiO, setTyphiO] = useState('');
-  const [typhiH, setTyphiH] = useState('');
-  const [typhiAH, setTyphiAH] = useState('');
-  const [typhiBH, setTyphiBH] = useState('');
-  const [widalResult, setWidalResult] = useState('');
-  const [xrayNotes, setXrayNotes] = useState('');
-  const [stoolNotes, setStoolNotes] = useState('');
-  const [usgNotes, setUsgNotes] = useState('');
-  const [mriNotes, setMriNotes] = useState('');
+  const [biliTotal, setBiliTotal] = useState(initialReport?.biliTotal || '');
+  const [biliDirect, setBiliDirect] = useState(initialReport?.biliDirect || '');
+  const [biliIndirect, setBiliIndirect] = useState(initialReport?.biliIndirect || '');
+  const [sgpt, setSgpt] = useState(initialReport?.sgpt || '');
+  const [g6pd, setG6pd] = useState(initialReport?.g6pd || '');
+  const [hivTest, setHivTest] = useState(initialReport?.hivTest || '');
+  const [typhiO, setTyphiO] = useState(initialReport?.typhiO || '');
+  const [typhiH, setTyphiH] = useState(initialReport?.typhiH || '');
+  const [typhiAH, setTyphiAH] = useState(initialReport?.typhiAH || '');
+  const [typhiBH, setTyphiBH] = useState(initialReport?.typhiBH || '');
+  const [widalResult, setWidalResult] = useState(initialReport?.widalResult || '');
+  const [xrayNotes, setXrayNotes] = useState(initialReport?.xrayNotes || '');
+  const [stoolNotes, setStoolNotes] = useState(initialReport?.stoolNotes || '');
+  const [usgNotes, setUsgNotes] = useState(initialReport?.usgNotes || '');
+  const [mriNotes, setMriNotes] = useState(initialReport?.mriNotes || '');
+
+  const getInputStyle = (key, val, baseStyle = {}) => {
+    const isOut = checkIsOutOfRange(key, val);
+    return {
+      ...baseStyle,
+      ...(isOut
+        ? {
+            border: '2px solid #ef4444',
+            backgroundColor: '#fef2f2',
+            color: '#dc2626',
+            fontWeight: 700,
+          }
+        : {}),
+    };
+  };
 
   const handleSave = () => {
+    const fullReport = {
+      labName,
+      entryDate,
+      hemoglobin,
+      rbcCount,
+      wbcCount,
+      plateletCount,
+      esr,
+      bandCell,
+      neutrophils,
+      lymphocytes,
+      eosinophils,
+      monocytes,
+      basophils,
+      parasites,
+      rbs,
+      fbs,
+      ppbs,
+      creatinin,
+      vitaminB12,
+      t3,
+      t4,
+      tsh,
+      quantity,
+      color,
+      appearance,
+      spGravity,
+      reactionPh,
+      albumin,
+      sugar,
+      bileSalts,
+      ketoneBodies,
+      pusCells,
+      epithelialCells,
+      rbcUrine,
+      crystals,
+      casts,
+      bacteria,
+      otherUrine,
+      biliTotal,
+      biliDirect,
+      biliIndirect,
+      sgpt,
+      g6pd,
+      hivTest,
+      typhiO,
+      typhiH,
+      typhiAH,
+      typhiBH,
+      widalResult,
+      xrayNotes,
+      stoolNotes,
+      usgNotes,
+      mriNotes,
+    };
     if (onSave) {
-      onSave({ labName, entryDate });
+      onSave(fullReport);
     }
     onClose();
   };
 
   const handleClear = () => {
-    setQuantity(''); setColor(''); setAppearance(''); setSpGravity(''); setReactionPh('');
-    setAlbumin(''); setSugar(''); setBileSalts(''); setKetoneBodies('');
-    setCrystals(''); setCasts(''); setBacteria('');
+    setHemoglobin('');
+    setRbcCount('');
+    setWbcCount('');
+    setPlateletCount('');
+    setEsr('');
+    setBandCell('');
+    setNeutrophils('');
+    setLymphocytes('');
+    setEosinophils('');
+    setMonocytes('');
+    setBasophils('');
+    setParasites('');
+    setRbs('');
+    setFbs('');
+    setPpbs('');
+    setCreatinin('');
+    setVitaminB12('');
+    setT3('');
+    setT4('');
+    setTsh('');
+    setQuantity('');
+    setColor('');
+    setAppearance('');
+    setSpGravity('');
+    setReactionPh('');
+    setAlbumin('');
+    setSugar('');
+    setBileSalts('');
+    setKetoneBodies('');
+    setPusCells('');
+    setEpithelialCells('');
+    setRbcUrine('');
+    setCrystals('');
+    setCasts('');
+    setBacteria('');
+    setOtherUrine('');
+    setBiliTotal('');
+    setBiliDirect('');
+    setBiliIndirect('');
+    setSgpt('');
+    setG6pd('');
+    setHivTest('');
+    setTyphiO('');
+    setTyphiH('');
+    setTyphiAH('');
+    setTyphiBH('');
+    setWidalResult('');
+    setXrayNotes('');
+    setStoolNotes('');
+    setUsgNotes('');
+    setMriNotes('');
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '1040px',
-        maxHeight: '94vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-        display: 'flex', flexDirection: 'column'
-      }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+      }}
+    >
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: '12px',
+          width: '100%',
+          maxWidth: '1040px',
+          maxHeight: '94vh',
+          overflowY: 'auto',
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {/* Header Bar */}
-        <div style={{
-          background: '#0284c7', color: '#fff', padding: '12px 18px',
-          borderRadius: '12px 12px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}>
+        <div
+          style={{
+            background: '#0284c7',
+            color: '#fff',
+            padding: '12px 18px',
+            borderRadius: '12px 12px 0 0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 800 }}>
             <i className="fa-solid fa-flask-vial" />
             <span>CMS - Laboratory Investigation &amp; Diagnostic Management Software</span>
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: '6px', width: '28px', height: '28px', cursor: 'pointer', fontSize: '16px' }}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: '#fff',
+              borderRadius: '6px',
+              width: '28px',
+              height: '28px',
+              cursor: 'pointer',
+              fontSize: '16px',
+            }}
           >
             ×
           </button>
         </div>
 
         {/* Patient & Lab Meta Grid */}
-        <div style={{
-          padding: '12px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0',
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '12px'
-        }}>
+        <div
+          style={{
+            padding: '12px 18px',
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '10px',
+            fontSize: '12px',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontWeight: 700, color: '#475569', minWidth: '90px' }}>FAMILY NAME :</span>
-            <input className="cms-input" readOnly value={family?.headName || patient?.name || ''} style={{ height: '30px', fontSize: '12px' }} />
+            <input
+              className="cms-input"
+              readOnly
+              value={family?.headName || patient?.name || ''}
+              style={{ height: '30px', fontSize: '12px' }}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontWeight: 700, color: '#475569', minWidth: '70px' }}>LAB NAME :</span>
-            <input className="cms-input" value={labName} onChange={e => setLabName(e.target.value)} style={{ height: '30px', fontSize: '12px' }} />
+            <input
+              className="cms-input"
+              value={labName}
+              onChange={(e) => setLabName(e.target.value)}
+              style={{ height: '30px', fontSize: '12px' }}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontWeight: 700, color: '#475569', minWidth: '70px' }}>CASE NO :</span>
-            <input className="cms-input font-mono" readOnly value={caseNo || '0001000102'} style={{ height: '30px', fontSize: '12px', fontWeight: 700 }} />
+            <input
+              className="cms-input font-mono"
+              readOnly
+              value={caseNo || '10101'}
+              style={{ height: '30px', fontSize: '12px', fontWeight: 700 }}
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontWeight: 700, color: '#475569', minWidth: '90px' }}>PATIENT NAME :</span>
-            <input className="cms-input" readOnly value={patient?.name || ''} style={{ height: '30px', fontSize: '12px', fontWeight: 700 }} />
+            <input
+              className="cms-input"
+              readOnly
+              value={patient?.name || ''}
+              style={{ height: '30px', fontSize: '12px', fontWeight: 700 }}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontWeight: 700, color: '#475569', minWidth: '70px' }}>DR NAME :</span>
-            <input className="cms-input" readOnly value={doctorName} style={{ height: '30px', fontSize: '12px' }} />
+            <input
+              className="cms-input"
+              readOnly
+              value={doctorName}
+              style={{ height: '30px', fontSize: '12px' }}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontWeight: 700, color: '#475569', minWidth: '70px' }}>ENTRY DATE :</span>
-            <input className="cms-input font-mono" value={entryDate} onChange={e => setEntryDate(e.target.value)} style={{ height: '30px', fontSize: '12px', fontWeight: 700 }} />
+            <input
+              className="cms-input font-mono"
+              value={entryDate}
+              onChange={(e) => setEntryDate(e.target.value)}
+              style={{ height: '30px', fontSize: '12px', fontWeight: 700 }}
+            />
           </div>
         </div>
 
@@ -145,10 +389,17 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
             type="button"
             onClick={() => setActiveTab('hematology')}
             style={{
-              padding: '8px 14px', borderRadius: '6px 6px 0 0', border: 'none', cursor: 'pointer',
+              padding: '8px 14px',
+              borderRadius: '6px 6px 0 0',
+              border: 'none',
+              cursor: 'pointer',
               background: activeTab === 'hematology' ? '#fff' : 'transparent',
-              color: activeTab === 'hematology' ? '#0369a1' : '#64748b', fontWeight: 700, fontSize: '12px',
-              display: 'flex', alignItems: 'center', gap: '6px'
+              color: activeTab === 'hematology' ? '#0369a1' : '#64748b',
+              fontWeight: 700,
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
             <span style={{ color: '#dc2626' }}>🩸</span> Routine Hematology Report
@@ -157,10 +408,17 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
             type="button"
             onClick={() => setActiveTab('urine')}
             style={{
-              padding: '8px 14px', borderRadius: '6px 6px 0 0', border: 'none', cursor: 'pointer',
+              padding: '8px 14px',
+              borderRadius: '6px 6px 0 0',
+              border: 'none',
+              cursor: 'pointer',
               background: activeTab === 'urine' ? '#fff' : 'transparent',
-              color: activeTab === 'urine' ? '#0369a1' : '#64748b', fontWeight: 700, fontSize: '12px',
-              display: 'flex', alignItems: 'center', gap: '6px'
+              color: activeTab === 'urine' ? '#0369a1' : '#64748b',
+              fontWeight: 700,
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
             <span style={{ color: '#d97706' }}>✏</span> Routine Urine Examination Report
@@ -169,10 +427,17 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
             type="button"
             onClick={() => setActiveTab('other')}
             style={{
-              padding: '8px 14px', borderRadius: '6px 6px 0 0', border: 'none', cursor: 'pointer',
+              padding: '8px 14px',
+              borderRadius: '6px 6px 0 0',
+              border: 'none',
+              cursor: 'pointer',
               background: activeTab === 'other' ? '#fff' : 'transparent',
-              color: activeTab === 'other' ? '#0369a1' : '#64748b', fontWeight: 700, fontSize: '12px',
-              display: 'flex', alignItems: 'center', gap: '6px'
+              color: activeTab === 'other' ? '#0369a1' : '#64748b',
+              fontWeight: 700,
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
             <span style={{ color: '#0284c7' }}>📁</span> Other Reports (Bilirubin, Widal, X-Ray, Stool, USG, CT)
@@ -181,10 +446,8 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
 
         {/* Body Content with Right Sidebar Actions */}
         <div style={{ display: 'flex', padding: '16px 18px', gap: '16px', overflowY: 'auto' }}>
-          
           {/* Main Tab Panels */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            
             {/* TAB 1: HEMATOLOGY */}
             {activeTab === 'hematology' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -192,20 +455,42 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {/* Routine Hematology CBC */}
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#0369a1',
+                        textTransform: 'uppercase',
+                        marginBottom: '8px',
+                      }}
+                    >
                       ROUTINE HEMATOLOGY (CBC) PARAMETERS
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                       {[
-                        { label: 'Hemoglobin :', val: hemoglobin, setVal: setHemoglobin, norm: '( 12.0 - 16.0 gm% )' },
-                        { label: 'RBC Count :', val: rbcCount, setVal: setRbcCount, norm: '( 4.2 - 5.4 mill /c.mm )' },
-                        { label: 'WBC Count :', val: wbcCount, setVal: setWbcCount, norm: '( 4000 - 10,000 /c.mm )' },
-                        { label: 'Platelet Count :', val: plateletCount, setVal: setPlateletCount, norm: '( 1,50,000 - 4,00,000 / c.mm )' },
-                        { label: 'ESR :', val: esr, setVal: setEsr, norm: '( 2 - 20 mm/hr. ) (< 50 yrs)' },
+                        { key: 'hemoglobin', label: 'Hemoglobin :', val: hemoglobin, setVal: setHemoglobin, norm: '( 12.0 - 16.0 gm% )' },
+                        { key: 'rbcCount', label: 'RBC Count :', val: rbcCount, setVal: setRbcCount, norm: '( 4.2 - 5.4 mill /c.mm )' },
+                        { key: 'wbcCount', label: 'WBC Count :', val: wbcCount, setVal: setWbcCount, norm: '( 4000 - 10,000 /c.mm )' },
+                        { key: 'plateletCount', label: 'Platelet Count :', val: plateletCount, setVal: setPlateletCount, norm: '( 1,50,000 - 4,00,000 / c.mm )' },
+                        { key: 'esr', label: 'ESR :', val: esr, setVal: setEsr, norm: '( 2 - 20 mm/hr. ) (< 50 yrs)' },
                       ].map((r, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 90px 1fr', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          key={i}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '100px 90px 1fr',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                          <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                          <input
+                            className="cms-input"
+                            style={getInputStyle(r.key, r.val, { height: '26px', fontSize: '11px', textAlign: 'center' })}
+                            placeholder="—"
+                            value={r.val}
+                            onChange={(e) => r.setVal(e.target.value)}
+                          />
                           <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                         </div>
                       ))}
@@ -214,22 +499,44 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
 
                   {/* Differential WBC */}
                   <div style={{ border: '1px solid #fde68a', borderRadius: '8px', padding: '12px', background: '#fffbeb' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#b45309',
+                        textTransform: 'uppercase',
+                        marginBottom: '8px',
+                      }}
+                    >
                       DIFFERENTIAL WBC COUNT POLYMORPHS
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                       {[
-                        { label: 'Band Cell :', val: bandCell, setVal: setBandCell, norm: '( 0 - 6 % )' },
-                        { label: 'Neutrophils :', val: neutrophils, setVal: setNeutrophils, norm: '( 55 - 70 % )' },
-                        { label: 'Lymphocytes :', val: lymphocytes, setVal: setLymphocytes, norm: '( 20 - 40 % )' },
-                        { label: 'Eosinophils :', val: eosinophils, setVal: setEosinophils, norm: '( 1 - 6 % )' },
-                        { label: 'Monocytes :', val: monocytes, setVal: setMonocytes, norm: '( 2 - 8 % )' },
-                        { label: 'Basophils :', val: basophils, setVal: setBasophils, norm: '( 0 - 01 % )' },
-                        { label: 'Parasites :', val: parasites, setVal: setParasites, norm: '( Negative / Not Seen )' },
+                        { key: 'bandCell', label: 'Band Cell :', val: bandCell, setVal: setBandCell, norm: '( 0 - 6 % )' },
+                        { key: 'neutrophils', label: 'Neutrophils :', val: neutrophils, setVal: setNeutrophils, norm: '( 55 - 70 % )' },
+                        { key: 'lymphocytes', label: 'Lymphocytes :', val: lymphocytes, setVal: setLymphocytes, norm: '( 20 - 40 % )' },
+                        { key: 'eosinophils', label: 'Eosinophils :', val: eosinophils, setVal: setEosinophils, norm: '( 1 - 6 % )' },
+                        { key: 'monocytes', label: 'Monocytes :', val: monocytes, setVal: setMonocytes, norm: '( 2 - 8 % )' },
+                        { key: 'basophils', label: 'Basophils :', val: basophils, setVal: setBasophils, norm: '( 0 - 01 % )' },
+                        { key: 'parasites', label: 'Parasites :', val: parasites, setVal: setParasites, norm: '( Negative / Not Seen )' },
                       ].map((r, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '90px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          key={i}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '90px 80px 1fr',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                          <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center', background: '#fff' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                          <input
+                            className="cms-input"
+                            style={getInputStyle(r.key, r.val, { height: '26px', fontSize: '11px', textAlign: 'center', background: '#fff' })}
+                            placeholder="—"
+                            value={r.val}
+                            onChange={(e) => r.setVal(e.target.value)}
+                          />
                           <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                         </div>
                       ))}
@@ -241,20 +548,42 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {/* Blood Glucose & Renal Profile */}
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#0369a1',
+                        textTransform: 'uppercase',
+                        marginBottom: '8px',
+                      }}
+                    >
                       BLOOD GLUCOSE &amp; RENAL PROFILE
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                       {[
-                        { label: 'RBS :', val: rbs, setVal: setRbs, norm: '( upto - 120 mg% )' },
-                        { label: 'FBS :', val: fbs, setVal: setFbs, norm: '( 70 - 100 mg% )' },
-                        { label: 'PPBS :', val: ppbs, setVal: setPpbs, norm: '( upto - 140 mg% )' },
-                        { label: 'S.Creatinin :', val: creatinin, setVal: setCreatinin, norm: '( 0.5 - 1.5 mg/dl )' },
-                        { label: 'Vitamin B 12 :', val: vitaminB12, setVal: setVitaminB12, norm: '( 200 - 900 pg/ml )' },
+                        { key: 'rbs', label: 'RBS :', val: rbs, setVal: setRbs, norm: '( upto - 120 mg% )' },
+                        { key: 'fbs', label: 'FBS :', val: fbs, setVal: setFbs, norm: '( 70 - 100 mg% )' },
+                        { key: 'ppbs', label: 'PPBS :', val: ppbs, setVal: setPpbs, norm: '( upto - 140 mg% )' },
+                        { key: 'creatinin', label: 'S.Creatinin :', val: creatinin, setVal: setCreatinin, norm: '( 0.5 - 1.5 mg/dl )' },
+                        { key: 'vitaminB12', label: 'Vitamin B 12 :', val: vitaminB12, setVal: setVitaminB12, norm: '( 200 - 900 pg/ml )' },
                       ].map((r, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '90px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          key={i}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '90px 80px 1fr',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                          <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                          <input
+                            className="cms-input"
+                            style={getInputStyle(r.key, r.val, { height: '26px', fontSize: '11px', textAlign: 'center' })}
+                            placeholder="—"
+                            value={r.val}
+                            onChange={(e) => r.setVal(e.target.value)}
+                          />
                           <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                         </div>
                       ))}
@@ -263,18 +592,40 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
 
                   {/* Thyroid Function Test */}
                   <div style={{ border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px', background: '#f0fdf4' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#15803d',
+                        textTransform: 'uppercase',
+                        marginBottom: '8px',
+                      }}
+                    >
                       THYROID FUNCTION TEST :
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                       {[
-                        { label: 'T3 :', val: t3, setVal: setT3, norm: '( 82 - 200 ng/ml )' },
-                        { label: 'T4 :', val: t4, setVal: setT4, norm: '( 4.5 - 12.5 mg% )' },
-                        { label: 'TSH :', val: tsh, setVal: setTsh, norm: '( 0.4 - 6.0 mlu/ml )' },
+                        { key: 't3', label: 'T3 :', val: t3, setVal: setT3, norm: '( 82 - 200 ng/ml )' },
+                        { key: 't4', label: 'T4 :', val: t4, setVal: setT4, norm: '( 4.5 - 12.5 mg% )' },
+                        { key: 'tsh', label: 'TSH :', val: tsh, setVal: setTsh, norm: '( 0.4 - 6.0 mlu/ml )' },
                       ].map((r, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          key={i}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '70px 80px 1fr',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                          <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center', background: '#fff' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                          <input
+                            className="cms-input"
+                            style={getInputStyle(r.key, r.val, { height: '26px', fontSize: '11px', textAlign: 'center', background: '#fff' })}
+                            placeholder="—"
+                            value={r.val}
+                            onChange={(e) => r.setVal(e.target.value)}
+                          />
                           <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                         </div>
                       ))}
@@ -289,24 +640,46 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 {/* Physical & Chemical */}
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: '#0369a1',
+                      textTransform: 'uppercase',
+                      marginBottom: '8px',
+                    }}
+                  >
                     PHYSICAL &amp; CHEMICAL EXAMINATION
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                     {[
-                      { label: 'Quantity :', val: quantity, setVal: setQuantity, norm: '( 30 - 50 ml )' },
-                      { label: 'Color :', val: color, setVal: setColor, norm: '( Pale Yellow )' },
-                      { label: 'Appearance :', val: appearance, setVal: setAppearance, norm: '( Clear )' },
-                      { label: 'Sp. Gravity :', val: spGravity, setVal: setSpGravity, norm: '( 1.005 - 1.030 )' },
-                      { label: 'Reaction (pH) :', val: reactionPh, setVal: setReactionPh, norm: '( 4.5 - 8.0 Acidic )' },
-                      { label: 'Albumin :', val: albumin, setVal: setAlbumin, norm: '( Nil )' },
-                      { label: 'Sugar :', val: sugar, setVal: setSugar, norm: '( Nil )' },
-                      { label: 'Bile Salts :', val: bileSalts, setVal: setBileSalts, norm: '( Negative )' },
-                      { label: 'Ketone Bodies :', val: ketoneBodies, setVal: setKetoneBodies, norm: '( Negative )' },
+                      { key: 'quantity', label: 'Quantity :', val: quantity, setVal: setQuantity, norm: '( 30 - 50 ml )' },
+                      { key: 'color', label: 'Color :', val: color, setVal: setColor, norm: '( Pale Yellow )' },
+                      { key: 'appearance', label: 'Appearance :', val: appearance, setVal: setAppearance, norm: '( Clear )' },
+                      { key: 'spGravity', label: 'Sp. Gravity :', val: spGravity, setVal: setSpGravity, norm: '( 1.005 - 1.030 )' },
+                      { key: 'reactionPh', label: 'Reaction (pH) :', val: reactionPh, setVal: setReactionPh, norm: '( 4.5 - 8.0 Acidic )' },
+                      { key: 'albumin', label: 'Albumin :', val: albumin, setVal: setAlbumin, norm: '( Nil )' },
+                      { key: 'sugar', label: 'Sugar :', val: sugar, setVal: setSugar, norm: '( Nil )' },
+                      { key: 'bileSalts', label: 'Bile Salts :', val: bileSalts, setVal: setBileSalts, norm: '( Negative )' },
+                      { key: 'ketoneBodies', label: 'Ketone Bodies :', val: ketoneBodies, setVal: setKetoneBodies, norm: '( Negative )' },
                     ].map((r, i) => (
-                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                      <div
+                        key={i}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '100px 80px 1fr',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
                         <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                        <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                        <input
+                          className="cms-input"
+                          style={{ height: '26px', fontSize: '11px', textAlign: 'center' }}
+                          placeholder="—"
+                          value={r.val}
+                          onChange={(e) => r.setVal(e.target.value)}
+                        />
                         <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                       </div>
                     ))}
@@ -315,22 +688,44 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
 
                 {/* Microscopic Examination */}
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: '#0369a1',
+                      textTransform: 'uppercase',
+                      marginBottom: '8px',
+                    }}
+                  >
                     MICROSCOPIC EXAMINATION (PER HPF)
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                     {[
-                      { label: 'Pus Cells :', val: pusCells, setVal: setPusCells, norm: '( 0 - 5 / HPF )' },
-                      { label: 'Epithelial Cells :', val: epithelialCells, setVal: setEpithelialCells, norm: '( 1 - 4 / HPF )' },
-                      { label: 'R.B.C. :', val: rbcUrine, setVal: setRbcUrine, norm: '( 0 - 2 / HPF )' },
-                      { label: 'Crystals :', val: crystals, setVal: setCrystals, norm: '( Nil / Not seen )' },
-                      { label: 'Casts :', val: casts, setVal: setCasts, norm: '( Nil )' },
-                      { label: 'Bacteria :', val: bacteria, setVal: setBacteria, norm: '( Nil )' },
-                      { label: 'Other :', val: otherUrine, setVal: setOtherUrine, norm: '( Nil )' },
+                      { key: 'pusCells', label: 'Pus Cells :', val: pusCells, setVal: setPusCells, norm: '( 0 - 5 / HPF )' },
+                      { key: 'epithelialCells', label: 'Epithelial Cells :', val: epithelialCells, setVal: setEpithelialCells, norm: '( 1 - 4 / HPF )' },
+                      { key: 'rbcUrine', label: 'R.B.C. :', val: rbcUrine, setVal: setRbcUrine, norm: '( 0 - 2 / HPF )' },
+                      { key: 'crystals', label: 'Crystals :', val: crystals, setVal: setCrystals, norm: '( Nil / Not seen )' },
+                      { key: 'casts', label: 'Casts :', val: casts, setVal: setCasts, norm: '( Nil )' },
+                      { key: 'bacteria', label: 'Bacteria :', val: bacteria, setVal: setBacteria, norm: '( Nil )' },
+                      { key: 'otherUrine', label: 'Other :', val: otherUrine, setVal: setOtherUrine, norm: '( Nil )' },
                     ].map((r, i) => (
-                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                      <div
+                        key={i}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '100px 80px 1fr',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
                         <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                        <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                        <input
+                          className="cms-input"
+                          style={getInputStyle(r.key, r.val, { height: '26px', fontSize: '11px', textAlign: 'center' })}
+                          placeholder="—"
+                          value={r.val}
+                          onChange={(e) => r.setVal(e.target.value)}
+                        />
                         <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                       </div>
                     ))}
@@ -345,21 +740,43 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                   {/* Bilirubin */}
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#0369a1',
+                        textTransform: 'uppercase',
+                        marginBottom: '8px',
+                      }}
+                    >
                       BILIRUBIN &amp; HEPATIC ENZYMES
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                       {[
-                        { label: 'Total :', val: biliTotal, setVal: setBiliTotal, norm: '0 - 1.0 mg/dl' },
-                        { label: 'Direct :', val: biliDirect, setVal: setBiliDirect, norm: 'up to 0.3 mg/dl' },
-                        { label: 'Indirect :', val: biliIndirect, setVal: setBiliIndirect, norm: '0.1 - 1.0 mg/dl' },
-                        { label: 'S.G.P.T. :', val: sgpt, setVal: setSgpt, norm: '10 - 40 IU / L' },
-                        { label: 'G6PD :', val: g6pd, setVal: setG6pd, norm: '( Normal )' },
-                        { label: 'HIV Test :', val: hivTest, setVal: setHivTest, norm: '( Non Reactive )' },
+                        { key: 'biliTotal', label: 'Total :', val: biliTotal, setVal: setBiliTotal, norm: '0.2 - 1.0 mg/dl' },
+                        { key: 'biliDirect', label: 'Direct :', val: biliDirect, setVal: setBiliDirect, norm: 'up to 0.3 mg/dl' },
+                        { key: 'biliIndirect', label: 'Indirect :', val: biliIndirect, setVal: setBiliIndirect, norm: '0.1 - 1.0 mg/dl' },
+                        { key: 'sgpt', label: 'S.G.P.T. :', val: sgpt, setVal: setSgpt, norm: '10 - 40 IU / L' },
+                        { key: 'g6pd', label: 'G6PD :', val: g6pd, setVal: setG6pd, norm: '( Normal )' },
+                        { key: 'hivTest', label: 'HIV Test :', val: hivTest, setVal: setHivTest, norm: '( Non Reactive )' },
                       ].map((r, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          key={i}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '80px 80px 1fr',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                          <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                          <input
+                            className="cms-input"
+                            style={getInputStyle(r.key, r.val, { height: '26px', fontSize: '11px', textAlign: 'center' })}
+                            placeholder="—"
+                            value={r.val}
+                            onChange={(e) => r.setVal(e.target.value)}
+                          />
                           <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                         </div>
                       ))}
@@ -368,20 +785,42 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
 
                   {/* S.Widal Test */}
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#6d28d9', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#6d28d9',
+                        textTransform: 'uppercase',
+                        marginBottom: '8px',
+                      }}
+                    >
                       S.WIDAL TEST (TYPHOID SEROLOGY)
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px' }}>
                       {[
-                        { label: "S.Typhi 'O' :", val: typhiO, setVal: setTyphiO, norm: '( 1:30 Normal )' },
-                        { label: "S.Typhi 'H' :", val: typhiH, setVal: setTyphiH, norm: '( 1:30 Normal )' },
-                        { label: "S.Paratyphi 'AH' :", val: typhiAH, setVal: setTyphiAH, norm: '( 1:30 Normal )' },
-                        { label: "S.Paratyphi 'BH' :", val: typhiBH, setVal: setTyphiBH, norm: '( 1:30 Normal )' },
-                        { label: 'Result :', val: widalResult, setVal: setWidalResult, norm: '( Negative )' },
+                        { key: 'typhiO', label: "S.Typhi 'O' :", val: typhiO, setVal: setTyphiO, norm: '( 1:30 Normal )' },
+                        { key: 'typhiH', label: "S.Typhi 'H' :", val: typhiH, setVal: setTyphiH, norm: '( 1:30 Normal )' },
+                        { key: 'typhiAH', label: "S.Paratyphi 'AH' :", val: typhiAH, setVal: setTyphiAH, norm: '( 1:30 Normal )' },
+                        { key: 'typhiBH', label: "S.Paratyphi 'BH' :", val: typhiBH, setVal: setTyphiBH, norm: '( 1:30 Normal )' },
+                        { key: 'widalResult', label: 'Result :', val: widalResult, setVal: setWidalResult, norm: '( Negative )' },
                       ].map((r, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 80px 1fr', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          key={i}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '100px 80px 1fr',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span style={{ textAlign: 'right', fontWeight: 600 }}>{r.label}</span>
-                          <input className="cms-input" style={{ height: '26px', fontSize: '11px', textAlign: 'center' }} value={r.val} onChange={e => r.setVal(e.target.value)} />
+                          <input
+                            className="cms-input"
+                            style={{ height: '26px', fontSize: '11px', textAlign: 'center' }}
+                            placeholder="—"
+                            value={r.val}
+                            onChange={(e) => r.setVal(e.target.value)}
+                          />
                           <span style={{ color: '#64748b', fontSize: '10.5px' }}>{r.norm}</span>
                         </div>
                       ))}
@@ -391,40 +830,100 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
 
                 {/* Free Text Findings: X-Ray, Stool, USG, MRI */}
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: '#0369a1',
+                      textTransform: 'uppercase',
+                      marginBottom: '8px',
+                    }}
+                  >
                     DIAGNOSTIC RADIOLOGY, SONOGRAPHY &amp; SPECIAL REPORTS (DOCTOR FREE-TEXT FINDINGS)
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#0369a1', textAlign: 'center', marginBottom: '4px' }}>X - RAY</label>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#0369a1',
+                          textAlign: 'center',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        X - RAY
+                      </label>
                       <textarea
-                        className="cms-input" style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
+                        className="cms-input"
+                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
                         placeholder="Write X-Ray findings / impression here..."
-                        value={xrayNotes} onChange={e => setXrayNotes(e.target.value)}
+                        value={xrayNotes}
+                        onChange={(e) => setXrayNotes(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#0369a1', textAlign: 'center', marginBottom: '4px' }}>STOOL</label>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#0369a1',
+                          textAlign: 'center',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        STOOL
+                      </label>
                       <textarea
-                        className="cms-input" style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
+                        className="cms-input"
+                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
                         placeholder="Write Stool Examination notes..."
-                        value={stoolNotes} onChange={e => setStoolNotes(e.target.value)}
+                        value={stoolNotes}
+                        onChange={(e) => setStoolNotes(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#0369a1', textAlign: 'center', marginBottom: '4px' }}>SONOGRAPHY (USG)</label>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#0369a1',
+                          textAlign: 'center',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        SONOGRAPHY (USG)
+                      </label>
                       <textarea
-                        className="cms-input" style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
+                        className="cms-input"
+                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
                         placeholder="Write USG Abdomen / Pelvis report notes..."
-                        value={usgNotes} onChange={e => setUsgNotes(e.target.value)}
+                        value={usgNotes}
+                        onChange={(e) => setUsgNotes(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#0369a1', textAlign: 'center', marginBottom: '4px' }}>MRI / CTSCAN</label>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#0369a1',
+                          textAlign: 'center',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        MRI / CTSCAN
+                      </label>
                       <textarea
-                        className="cms-input" style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
+                        className="cms-input"
+                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
                         placeholder="Write MRI / CT Scan report findings..."
-                        value={mriNotes} onChange={e => setMriNotes(e.target.value)}
+                        value={mriNotes}
+                        onChange={(e) => setMriNotes(e.target.value)}
                       />
                     </div>
                   </div>
@@ -433,15 +932,24 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
             )}
           </div>
 
-          {/* Right Action Sidebar (Exact match with screenshot) */}
+          {/* Right Action Sidebar */}
           <div style={{ width: '110px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               type="button"
               onClick={handleSave}
               style={{
-                background: '#095c54', color: '#fff', border: 'none', borderRadius: '6px',
-                padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                background: '#095c54',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
               <i className="fa-solid fa-floppy-disk" /> Save
@@ -450,9 +958,18 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
               type="button"
               onClick={() => window.print()}
               style={{
-                background: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px',
-                padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                background: '#fff',
+                color: '#334155',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '8px 10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
               <i className="fa-solid fa-print" /> Print
@@ -461,9 +978,18 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
               type="button"
               onClick={handleClear}
               style={{
-                background: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px',
-                padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                background: '#fff',
+                color: '#334155',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '8px 10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
               <i className="fa-solid fa-rotate-left" /> Clear
@@ -472,9 +998,18 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
               type="button"
               onClick={onClose}
               style={{
-                background: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px',
-                padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                background: '#fff',
+                color: '#334155',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '8px 10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
               Cancel
@@ -485,19 +1020,27 @@ export default function LabReportModal({ patient, family, doctorName = 'Dr. Chir
                 type="button"
                 onClick={onClose}
                 style={{
-                  width: '100%', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5',
-                  borderRadius: '6px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                  width: '100%',
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '6px',
+                  padding: '8px 10px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
                 }}
               >
                 <i className="fa-solid fa-door-open" /> Exit
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
   );
 }
-

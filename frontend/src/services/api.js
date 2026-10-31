@@ -36,18 +36,51 @@ export const getClinicPrefix = (clinicId = 'demo') => {
 };
 
 export const generateFamilyId = (clinicId, year, seq) => {
-  const prefix = getClinicPrefix(clinicId);
-  const y = String(year || new Date().getFullYear());
-  const s = pad(seq || 1, 4);
-  return `${prefix}${y}${s}`; // e.g. 000120260001
+  return String(seq || 1);
 };
 
-export const makeCaseId = (famId, patId, visitNum) => {
-  const f = pad(String(famId).replace(/\D/g, '') || famId, 2);
-  const p = pad(String(patId).replace(/\D/g, '') || patId, 2);
-  const v = pad(String(visitNum).replace(/\D/g, '') || visitNum, 2);
-  return `${f}${p}${v}`;
+export const makeCaseId = (arg1, arg2, arg3) => {
+  if (arg3 !== undefined) {
+    const patId = String(arg2 || '').trim();
+    const v = pad(String(arg3).replace(/\D/g, '') || arg3, 2);
+    return `${patId}${v}`;
+  }
+  const patId = String(arg1 || '').trim();
+  const v = pad(String(arg2).replace(/\D/g, '') || arg2, 2);
+  return `${patId}${v}`;
 };
+
+/**
+ * Expand shortcut code (e.g. PEN -> Penicillin) and append comma for multi-item fields
+ */
+export function expandShortcut(value, masterList) {
+  if (!value) return '';
+  const parts = value.split(',').map(p => p.trim());
+  const lastPart = parts[parts.length - 1];
+  if (!lastPart) return value.endsWith(', ') ? value : `${value}, `;
+
+  const match = (masterList || []).find(m =>
+    (m.code && m.code.toUpperCase() === lastPart.toUpperCase()) ||
+    (m.name && m.name.toLowerCase() === lastPart.toLowerCase())
+  );
+
+  const expandedName = match ? (match.name || match.code) : lastPart;
+  parts[parts.length - 1] = expandedName;
+  return parts.filter(Boolean).join(', ') + ', ';
+}
+
+/**
+ * Find matching master item name or return original
+ */
+export function findMasterMatch(value, masterList) {
+  if (!value) return '';
+  const clean = value.trim();
+  const match = (masterList || []).find(m =>
+    (m.code && m.code.toUpperCase() === clean.toUpperCase()) ||
+    (m.name && m.name.toLowerCase() === clean.toLowerCase())
+  );
+  return match ? (match.name || match.code) : clean;
+}
 
 /* ---- Global Toast Trigger ---- */
 export function showToast(msg, type = 'success') {

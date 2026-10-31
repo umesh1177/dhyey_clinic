@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   apiFetch,
   showToast, getSharedMasterCollection, pad,
+  fetchMasterCollectionFromDB, expandShortcut, findMasterMatch,
 } from '../services/api';
 
 const BLOOD_GROUPS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -30,13 +31,27 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
 
   const [allergiesMaster, setAllergiesMaster] = useState([]);
   const [relationsMaster, setRelationsMaster] = useState([]);
+  const [areasMaster, setAreasMaster] = useState([]);
   const nameRef = useRef();
 
   useEffect(() => {
     loadData();
-    setAllergiesMaster(getSharedMasterCollection('allergies'));
-    setRelationsMaster(getSharedMasterCollection('relations'));
+    fetchMasterCollectionFromDB('allergies').then(d => setAllergiesMaster(d || []));
+    fetchMasterCollectionFromDB('relations').then(d => setRelationsMaster(d || []));
+    fetchMasterCollectionFromDB('areas').then(d => setAreasMaster(d || []));
   }, [clinicId]);
+
+  useEffect(() => {
+    if (initialPatientId) {
+      setEditingPatientId(initialPatientId);
+      apiFetch(`/patients/${initialPatientId}`).then(res => {
+        if (res.data) {
+          loadPatientForEdit(res.data);
+          if (res.data.familyId) setSelectedFamilyId(res.data.familyId);
+        }
+      }).catch(console.warn);
+    }
+  }, [initialPatientId]);
 
   useEffect(() => {
     if (selectedFamilyId && families.length > 0) {
@@ -75,18 +90,25 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
     if (editingPatientId) return;
     const fam = families.find(f => (f.id || f.famId) === fId);
     if (!fam) return;
-    const seq = pad(fam.sequence || 1, 4);
-    const pCount = Object.keys(fam.patients || {}).length + 1;
-    setPatientId(`${seq}${pad(pCount, 4)}`);
+    const count = (fam.members?.length || Object.keys(fam.patients || {}).length || 0) + 1;
+    const fIdStr = String(fam.famId || fam.id || fId);
+    setPatientId(`${fIdStr}${pad(count, 2)}`);
   };
 
   const loadPatientForEdit = (p) => {
-    setEditingPatientId(p.id || p.patId);
-    setPatientId(p.id || p.patId);
-    setName(p.name); setRelation(p.relation || '');
-    setAge(p.age || ''); setGender(p.gender || 'Male');
-    setBloodGroup(p.bloodGroup || ''); setAllergy(p.allergy || '');
-    setPhone(p.phone || ''); setSociety(p.society || ''); setArea(p.area || '');
+    const id = p.id || p.patId;
+    setEditingPatientId(id);
+    setPatientId(id);
+    setName(p.name || '');
+    setRelation(p.relation || '');
+    setAge(p.age || '');
+    setGender(p.gender || 'Male');
+    setBloodGroup(p.bloodGroup || '');
+    setAllergy(p.allergy || '');
+    setPhone(p.phone || '');
+    setSociety(p.society || '');
+    setArea(p.area || '');
+    if (p.familyId) setSelectedFamilyId(p.familyId);
   };
 
   const handleSubmit = async (e) => {
@@ -101,22 +123,30 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
           method: 'PUT',
           body: {
             name: name.trim().toUpperCase(),
-            relation,
+            relation: relation.trim(),
             age: age.trim(),
             gender,
             bloodGroup: bloodGroup.trim(),
             allergy: allergy.trim() || 'None',
+            society: society.trim(),
+            area: area.trim(),
             phone: phone.trim(),
           },
         });
-        showToast('Patient updated in database.');
+        showToast('Patient updated in database!');
+        if (onNavigate) {
+          onNavigate('case', { familyId: selectedFamilyId, patientId: editingPatientId });
+        } else if (onSelectPatient) {
+          onSelectPatient(selectedFamilyId, editingPatientId);
+        }
+        return;
       } else {
-        await apiFetch('/patients', {
+        const res = await apiFetch('/patients', {
           method: 'POST',
           body: {
             familyId: selectedFamilyId,
             name: name.trim().toUpperCase(),
-            relation,
+            relation: relation.trim(),
             age: age.trim(),
             gender,
             bloodGroup: bloodGroup.trim(),
@@ -127,8 +157,14 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
           },
         });
         showToast(`Member ${name.toUpperCase()} added to database!`);
+        const newPat = res.data || {};
+        const newPatId = newPat.patId || newPat.id || pId;
+        if (onNavigate) {
+          onNavigate('case', { familyId: selectedFamilyId, patientId: newPatId });
+        } else if (onSelectPatient) {
+          onSelectPatient(selectedFamilyId, newPatId);
+        }
       }
-      onSelectPatient(selectedFamilyId, pId);
     } catch (err) {
       showToast(err.message || 'Failed to save patient to database', 'error');
     }
@@ -320,7 +356,7 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
-                    Relation to Head <span style={{ color: '#dc2626' }}>*</span>
+                    Relation to Head (Enter to match) <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -328,14 +364,16 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
                     placeholder="e.g. Wife, Son, Mother"
                     value={relation}
                     onChange={(e) => setRelation(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        setRelation(findMasterMatch(relation, relationsMaster));
+                      }
+                    }}
                     list="relation-list"
                   />
                   <datalist id="relation-list">
-                    {(relationsMaster.length > 0 ? relationsMaster : [
-                      { id: 1, name: 'Wife' }, { id: 2, name: 'Son' }, { id: 3, name: 'Daughter' },
-                      { id: 4, name: 'Mother' }, { id: 5, name: 'Father' }, { id: 6, name: 'Brother' },
-                      { id: 7, name: 'Sister' }, { id: 8, name: 'Other' },
-                    ]).map((r) => <option key={r.id} value={r.name} />)}
+                    {relationsMaster.map((r) => <option key={r.id || r.name} value={r.name} />)}
                   </datalist>
                 </div>
               </div>
@@ -353,17 +391,20 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Known Allergies</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Known Allergies (Shortcut + Enter)</label>
                   <input
-                    type="text" className="cms-input" placeholder="e.g. Penicillin, None"
+                    type="text" className="cms-input" placeholder="e.g. PEN -> Penicillin, "
                     value={allergy} onChange={(e) => setAllergy(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        setAllergy(expandShortcut(allergy, allergiesMaster));
+                      }
+                    }}
                     list="allergy-list-2"
                   />
                   <datalist id="allergy-list-2">
-                    {(allergiesMaster.length > 0 ? allergiesMaster : [
-                      { id: 1, name: 'None' }, { id: 2, name: 'Penicillin' },
-                      { id: 3, name: 'Sulfa' }, { id: 4, name: 'Dust / Pollen' }, { id: 5, name: 'Aspirin' },
-                    ]).map((a) => <option key={a.id} value={a.name} />)}
+                    {allergiesMaster.map((a) => <option key={a.id || a.code || a.name} value={a.code ? `${a.code} - ${a.name}` : a.name} />)}
                   </datalist>
                 </div>
               </div>
@@ -378,9 +419,24 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
-                    Area / Location <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>(Auto-filled, editable)</span>
+                    Area / Location (Enter to match) <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>(Auto-filled, editable)</span>
                   </label>
-                  <input type="text" className="cms-input" value={area} onChange={(e) => setArea(e.target.value.toUpperCase())} />
+                  <input
+                    type="text"
+                    className="cms-input"
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        setArea(findMasterMatch(area, areasMaster));
+                      }
+                    }}
+                    list="patient-areas-list"
+                  />
+                  <datalist id="patient-areas-list">
+                    {areasMaster.map(a => <option key={a.id || a.name} value={a.name} />)}
+                  </datalist>
                 </div>
               </div>
 
@@ -402,7 +458,7 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
                 )}
                 <button type="submit" className="cms-btn cms-btn-primary" style={{ flex: 1, height: '44px', fontSize: '14px', fontWeight: 700 }}>
                   <i className="fa-solid fa-user-plus"></i>{' '}
-                  {editingPatientId ? 'Update Member' : 'Save Member & Open Patient Record'}
+                  {editingPatientId ? 'Update Patient & Return to Case Entry' : 'Save Member & Open Patient Record'}
                   {' '}<kbd style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px' }}>Enter</kbd>
                 </button>
               </div>

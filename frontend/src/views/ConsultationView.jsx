@@ -118,10 +118,19 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
 
   /* ── Effects ────────────────────────────────────────────────────────── */
   useEffect(() => {
-    setComplaintsMaster(getSharedMasterCollection('complaints'));
-    setInvestigationsMaster(getSharedMasterCollection('investigations'));
-    setMedicinesMaster(getSharedMasterCollection('medicines'));
+    fetchMasterCollectionFromDB('complaints').then(d => setComplaintsMaster(d || []));
+    fetchMasterCollectionFromDB('investigations').then(d => setInvestigationsMaster(d || []));
+    fetchMasterCollectionFromDB('medicines').then(d => setMedicinesMaster(d || []));
   }, []);
+
+  useEffect(() => {
+    if (initialSelection?.openHistory) {
+      setTimeout(() => {
+        const el = document.getElementById('cms-visit-history');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 400);
+    }
+  }, [initialSelection]);
 
   useEffect(() => {
     if (initialSelection?.familyId) setFamilyId(initialSelection.familyId);
@@ -230,6 +239,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
       reference, investigation: investigation.trim(),
       complaint: complaint.trim(), diagnosis: diagnosis.trim(),
       dietary: dietary.trim(),
+      labReport: labReportData,
       treatment: cleanTx, prescription: cleanRx,
       charge: Number(charge), received: Number(received), due: Number(due),
       labReportFile: labReportFile ? labReportFile.name : null,
@@ -278,6 +288,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
     setReference(v.reference || ''); setInvestigation(v.investigation || '');
     setComplaint(v.complaint || ''); setDiagnosis(v.diagnosis || '');
     setDietary(v.dietary || '');
+    setLabReportData(v.labReport || null);
     setTreatment(v.treatment?.length ? v.treatment : [{ name: '', qty: '1', cost: 0 }]);
     setPrescription(v.prescription?.length ? v.prescription : [{ name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }]);
     setCharge(v.charge || 0); setReceived(v.received || 0); setDue(v.due || 0);
@@ -716,13 +727,13 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate('patient', { familyId: activeFamily.id || activeFamily.famId, editPatientId: activePatient.id || activePatient.patId })}
+            onClick={() => onNavigate('patient', { familyId: activeFamily.famId || activeFamily.id, editPatientId: activePatient.patId || activePatient.id, patientId: activePatient.patId || activePatient.id })}
             style={{
               background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0',
               borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
             }}
           >
-            Edit Patient
+            Update Patient
           </button>
           <button
             type="button"
@@ -815,21 +826,43 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(COMMA-SEPARATED)</span>
+                INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(SHORTCUT + ENTER FOR COMMA)</span>
               </label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                placeholder="e.g. CBC, Lipid Profile, Urine R/M..."
-                value={investigation} onChange={e => setInvestigation(e.target.value)}
-                list="investigations-list" />
+              <input
+                type="text"
+                className="cms-input"
+                style={{ height: '30px', fontSize: '12px' }}
+                placeholder="e.g. CBC, LFT, RFT..."
+                value={investigation}
+                onChange={e => setInvestigation(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setInvestigation(expandShortcut(investigation, investigationsMaster));
+                  }
+                }}
+                list="investigations-list"
+              />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(COMMA-SEPARATED)</span>
+                COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(SHORTCUT + ENTER FOR COMMA)</span>
               </label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                placeholder="e.g. Fever, Cough, Headache..."
-                value={complaint} onChange={e => setComplaint(e.target.value)}
-                list="complaints-list" />
+              <input
+                type="text"
+                className="cms-input"
+                style={{ height: '30px', fontSize: '12px' }}
+                placeholder="e.g. FEV, COUGH, HEAD..."
+                value={complaint}
+                onChange={e => setComplaint(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setComplaint(expandShortcut(complaint, complaintsMaster));
+                  }
+                }}
+                list="complaints-list"
+              />
             </div>
           </div>
 
@@ -921,9 +954,16 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                       type="text"
                       className="cms-input"
                       style={{ flex: 1, height: '30px', fontSize: '12px', background: '#fff' }}
-                      placeholder="Treatment / Procedure name"
+                      placeholder="Treatment / Medicine (Enter to match)"
                       value={t.name}
                       onChange={e => handleTreatmentChange(i, 'name', e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleTreatmentChange(i, 'name', findMasterMatch(t.name, medicinesMaster));
+                        }
+                      }}
+                      list="consultation-medicines-list"
                     />
                     <input
                       type="text"
@@ -1047,7 +1087,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
       )}
 
       {/* ── VISIT HISTORY ─────────────────────────────────────────────────── */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 18px' }}>
+      <div id="cms-visit-history" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
@@ -1587,10 +1627,12 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
         <LabReportModal
           patient={activePatient}
           family={activeFamily}
-          caseNo={editingCaseId || (activePatient?.id ? `${activePatient.id}01` : '0001000102')}
+          caseNo={editingCaseId || (activePatient ? makeCaseId(activePatient.id || activePatient.patId, (activePatient.visits || []).length + 1) : '10101')}
+          initialReport={labReportData}
           onClose={() => setShowLabModal(false)}
           onSave={(data) => {
-            showToast('Diagnostic Laboratory Report attached successfully!');
+            setLabReportData(data);
+            showToast('Diagnostic Laboratory Report saved & attached to case!');
             setLabReportFile({ name: `${data.labName || 'Lab_Report'}.pdf` });
           }}
         />
