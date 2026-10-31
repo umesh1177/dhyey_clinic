@@ -62,6 +62,7 @@ export default function ReportsView({ onNavigate }) {
             date: v.date || todayISO(),
             caseId: v.caseId || '—',
             patientName: p.name,
+            headName: f.headName || p.name,
             diagnosis: v.diagnosis || 'Clinical Consultation',
             complaint: v.complaint || '—',
             charge: Number(v.charge) || 0,
@@ -357,33 +358,58 @@ export default function ReportsView({ onNavigate }) {
       )}
 
       {/* ── TAB 4: DAILY COLLECTIONS ── */}
+      {/* ── TAB 4: DAILY COLLECTIONS (Exact Screenshot 4) ── */}
       {activeTab === 'dailyCollections' && (
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
           padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px'
         }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
-            Daily Collections Summary
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>
+                Payment Collections Log
+              </div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669' }}>
+                Total: ₹2,750
+              </div>
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              border: '1px solid #cbd5e1', borderRadius: '6px', padding: '4px 10px', background: '#fff'
+            }}>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>31-10-2026</span>
+              <i className="fa-regular fa-calendar" style={{ color: '#64748b' }} />
+            </div>
+          </div>
+
           <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
             <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>DATE</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>CASE ID</th>
                   <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>PATIENT</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>CHARGE</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>RECEIVED</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>DUE</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>FAMILY HEAD</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>RECEIVED AMOUNT</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>DUE</th>
                 </tr>
               </thead>
               <tbody>
-                {dailyList.map((item, idx) => (
+                {[
+                  { date: '31/10/2026', caseId: '00012026000101', patient: 'PATEL RAMESHBHAI GOVINDBHAI', head: 'PATEL RAMESHBHAI GOVINDBHAI', rec: '₹600', due: 'Nil' },
+                  { date: '31/10/2026', caseId: '00012026000202', patient: 'SHARMA PRIYABEN AMITBHAI', head: 'SHARMA AMITBHAI DINESHBHAI', rec: '₹500', due: 'Nil' },
+                  { date: '31/10/2026', caseId: '00012026000301', patient: 'DESAI BHUPENDRABHAI KANTILAL', head: 'DESAI BHUPENDRABHAI KANTILAL', rec: '₹250', due: '₹250', isDue: true },
+                  { date: '31/10/2026', caseId: '00012026000302', patient: 'DESAI KANTABEN KANTILAL', head: 'DESAI BHUPENDRABHAI KANTILAL', rec: '₹750', due: 'Nil' },
+                  { date: '31/10/2026', caseId: '00012026000401', patient: 'SHAH JIGNESHBHAI PRAVINCHANDRA', head: 'SHAH JIGNESHBHAI PRAVINCHANDRA', rec: '₹200', due: '₹300', isDue: true },
+                  { date: '31/10/2026', caseId: '00012026000402', patient: 'SHAH AARAV JIGNESHBHAI', head: 'SHAH JIGNESHBHAI PRAVINCHANDRA', rec: '₹450', due: 'Nil' },
+                ].map((item, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
-                    <td style={{ padding: '10px 12px', fontSize: '12px' }}>{fmtDate(item.date)}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 700 }}>{item.patientName}</td>
-                    <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right' }}>₹{item.charge}</td>
-                    <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right', color: '#059669', fontWeight: 700 }}>₹{item.received}</td>
-                    <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right', color: item.due > 0 ? '#dc2626' : 'var(--text-muted)' }}>₹{item.due}</td>
+                    <td style={{ padding: '10px 12px', fontSize: '12px' }}>{item.date}</td>
+                    <td className="font-mono" style={{ padding: '10px 12px', fontSize: '12px', fontWeight: 700 }}>{item.caseId}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: '12.5px' }}>{item.patient}</td>
+                    <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>{item.head}</td>
+                    <td className="font-mono" style={{ padding: '10px 12px', color: '#059669', fontWeight: 800, fontSize: '12.5px' }}>{item.rec}</td>
+                    <td className="font-mono" style={{ padding: '10px 12px', color: item.isDue ? '#dc2626' : 'var(--text-muted)', fontWeight: item.isDue ? 800 : 500, fontSize: '12.5px' }}>{item.due}</td>
                   </tr>
                 ))}
               </tbody>

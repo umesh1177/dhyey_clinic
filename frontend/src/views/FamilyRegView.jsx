@@ -18,7 +18,8 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   const [showPrefTooltip, setShowPrefTooltip] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
-  const [expandedFamilies, setExpandedFamilies] = useState({});
+  const [hoveredFamId, setHoveredFamId] = useState(null);
+  const [clickedFamId, setClickedFamId] = useState(null);
 
   const currentYear = new Date().getFullYear();
   const [headName, setHeadName] = useState('');
@@ -149,14 +150,12 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
-  const isFamilyExpanded = (famId, idx) => {
-    if (expandedFamilies[famId] !== undefined) return expandedFamilies[famId];
-    return idx === 0; // First family expanded by default
+  const isFamilyExpanded = (famId) => {
+    return hoveredFamId === famId || clickedFamId === famId;
   };
 
-  const toggleExpand = (famId, idx) => {
-    const current = isFamilyExpanded(famId, idx);
-    setExpandedFamilies((prev) => ({ ...prev, [famId]: !current }));
+  const toggleExpand = (famId) => {
+    setClickedFamId(prev => prev === famId ? null : famId);
   };
 
   // Determine clinic prefix badge
@@ -329,15 +328,17 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
             No families found
           </div>
         ) : (
-          paginated.map((f, idx) => {
+          paginated.map((f) => {
             const famId = f.id || f.famId;
             const patientsList = Object.values(f.patients || {});
             const memberCount = patientsList.length;
-            const isExpanded = isFamilyExpanded(famId, idx);
+            const isExpanded = isFamilyExpanded(famId);
 
             return (
               <div
                 key={famId}
+                onMouseEnter={() => setHoveredFamId(famId)}
+                onMouseLeave={() => setHoveredFamId(null)}
                 style={{
                   border: isExpanded ? '1.5px solid rgba(9,92,84,0.3)' : '1px solid var(--border)',
                   borderRadius: '10px',
@@ -347,20 +348,17 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
                   boxShadow: isExpanded ? '0 2px 10px rgba(9,92,84,0.06)' : 'none',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div
                     style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-                    onClick={() => toggleExpand(famId, idx)}
+                    onClick={() => toggleExpand(famId)}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '3px' }}>
                       <span style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text)' }}>
                         {f.headName}
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                         By {f.registeredBy || 'Self'}
-                      </span>
-                      <span className="font-mono" style={{ background: 'rgba(9,92,84,0.08)', color: 'var(--primary)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', fontWeight: 700 }}>
-                        FAM {famId}
                       </span>
                     </div>
                     <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
@@ -369,42 +367,30 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: '10px' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0, marginLeft: '10px' }}>
+                    <span className="font-mono" style={{ color: '#047857', fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      FAM {famId}
+                    </span>
                     <button
                       type="button"
                       className="cms-btn cms-btn-ghost"
                       onClick={() => handleEdit(f)}
-                      style={{ fontSize: '12px', padding: '4px 10px', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      style={{ fontSize: '11.5px', padding: '3px 8px', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
                       <i className="fa-solid fa-pen-to-square"></i> Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(famId)}
-                      style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px 8px', fontSize: '14px' }}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '3px 6px', fontSize: '13px' }}
                       title="Delete family"
                     >
                       <i className="fa-solid fa-trash"></i>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(famId, idx)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        padding: '4px 6px',
-                        fontSize: '12px',
-                      }}
-                      title={isExpanded ? 'Collapse members' : 'Expand members'}
-                    >
-                      <i className={`fa-solid fa-chevron-${isExpanded ? 'up' : 'down'}`}></i>
-                    </button>
                   </div>
                 </div>
 
-                {/* Expandable Family Members Tray */}
+                {/* Expandable Family Members Tray on Hover / Click */}
                 {isExpanded && (
                   <div style={{
                     marginTop: '10px',
