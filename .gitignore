@@ -19,6 +19,7 @@ ehthumbs.db
 node_modules/
 bower_components/
 jspm_packages/
+frontend-vanilla/
 
 # Build and Output Directories
 dist/
