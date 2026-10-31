@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   getLocalDB,
@@ -15,70 +15,92 @@ import {
 } from '../services/api';
 import PrescriptionModal from '../components/PrescriptionModal';
 
-export default function ConsultationView({
-  initialSelection,
-  onNavigate,
-}) {
+/* ── Diet shortcut templates ─────────────────────────────────────────── */
+const DIET_TEMPLATES = {
+  DB:      'DB: Avoid sugar, sweets, rice, potato, banana. Eat bitter gourd, fenugreek.',
+  BP:      'BP: Avoid salt, pickles, papad, processed food. Eat less oil.',
+  ACID:    'ACID: Avoid spicy, fried, sour food. Eat on time. No tea/coffee empty stomach.',
+  THYROID: 'THYROID: Avoid cabbage, cauliflower, soya. Eat iodine-rich food.',
+  URIC:    'URIC: Avoid pulses, non-veg, alcohol. Drink 3-4 liters water daily.',
+  CV:      'CV: Avoid ghee, butter, fried food. Eat oats, nuts, green vegetables.',
+  LQ:      'LQ: Light diet only. Khichdi, dal-rice, boiled vegetables, curd.',
+};
+
+const URIC_TOOLTIP = 'Hyperuricemia / Gout (High Uric Acid)';
+
+/* ── Format date DD-MM-YYYY for visit title ─────────────────────────── */
+function fmtDMY(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}-${m}-${y}`;
+}
+
+export default function ConsultationView({ initialSelection, onNavigate }) {
   const { session } = useAuth();
   const clinicId = session?.profile?.activeClinicId || 'demo';
 
-  const [familyId, setFamilyId] = useState(initialSelection?.familyId || null);
-  const [patientId, setPatientId] = useState(initialSelection?.patientId || null);
-
+  const [familyId, setFamilyId]     = useState(initialSelection?.familyId || null);
+  const [patientId, setPatientId]   = useState(initialSelection?.patientId || null);
   const [activePatient, setActivePatient] = useState(null);
-  const [activeFamily, setActiveFamily] = useState(null);
+  const [activeFamily, setActiveFamily]   = useState(null);
 
-  // Subview: 'case' | 'family-due'
-  const [subView, setSubView] = useState('case');
-  const [showDueOnly, setShowDueOnly] = useState(false);
-  const [historyDateFilter, setHistoryDateFilter] = useState('');
-
-  // New Visit Form State
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  /* visit form */
+  const [isFormOpen, setIsFormOpen]       = useState(false);
   const [editingCaseId, setEditingCaseId] = useState(null);
 
-  const [visitDate, setVisitDate] = useState(todayISO());
-  const [visitTime, setVisitTime] = useState(nowTime());
-  const [weight, setWeight] = useState('');
-  const [bp, setBp] = useState('');
-  const [sugar, setSugar] = useState('');
-  const [pulse, setPulse] = useState('');
-  const [reference, setReference] = useState('Self');
-  const [otherNotes, setOtherNotes] = useState('');
-
-  const [complaint, setComplaint] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
+  /* vitals */
+  const [visitDate, setVisitDate]   = useState(todayISO());
+  const [visitTime, setVisitTime]   = useState(nowTime());
+  const [bp, setBp]                 = useState('');
+  const [sugar, setSugar]           = useState('');
+  const [other, setOther]           = useState('');
+  const [reference, setReference]   = useState('');
   const [investigation, setInvestigation] = useState('');
+  const [complaint, setComplaint]   = useState('');
 
-  // Treatment rows
-  const [treatment, setTreatment] = useState([
-    { name: 'Clinical Consultation', qty: '1', cost: 300 },
+  /* dietary */
+  const [dietary, setDietary]       = useState('');
+  const [uricTooltip, setUricTooltip] = useState(false);
+
+  /* diagnosis (saved, not displayed in form per screenshot) */
+  const [diagnosis, setDiagnosis]   = useState('');
+
+  /* treatment */
+  const [treatment, setTreatment]   = useState([
+    { name: '', qty: '1', cost: 0 },
   ]);
 
-  // Prescription rows
+  /* prescription */
   const [prescription, setPrescription] = useState([
-    { name: '', qty: '10', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF', notes: '' },
+    { name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' },
   ]);
 
-  const [charge, setCharge] = useState(300);
-  const [received, setReceived] = useState(300);
-  const [due, setDue] = useState(0);
+  /* financials */
+  const [charge, setCharge]     = useState(0);
+  const [received, setReceived] = useState(0);
+  const [due, setDue]           = useState(0);
 
-  // Attached Lab Report
-  const [labReportFile, setLabReportFile] = useState(null);
+  /* file */
+  const [labReportFile, setLabReportFile]   = useState(null);
+  const fileInputRef                        = useRef(null);
 
-  // Active modal for printing
+  /* history filters */
+  const [showDueOnly, setShowDueOnly]         = useState(false);
+  const [historyDateFilter, setHistoryDateFilter] = useState('');
+
+  /* print */
   const [printingVisit, setPrintingVisit] = useState(null);
 
-  // Masters Autocomplete
-  const [complaintsMaster, setComplaintsMaster] = useState([]);
+  /* masters */
+  const [complaintsMaster, setComplaintsMaster]         = useState([]);
   const [investigationsMaster, setInvestigationsMaster] = useState([]);
-  const [medicinesMaster, setMedicinesMaster] = useState([]);
+  const [medicinesMaster, setMedicinesMaster]           = useState([]);
 
-  // Search state if no patient selected
-  const [searchQuery, setSearchQuery] = useState('');
+  /* search */
+  const [searchQuery, setSearchQuery]   = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
+  /* ── Effects ────────────────────────────────────────────────────────── */
   useEffect(() => {
     setComplaintsMaster(getSharedMasterCollection('complaints'));
     setInvestigationsMaster(getSharedMasterCollection('investigations'));
@@ -86,241 +108,168 @@ export default function ConsultationView({
   }, []);
 
   useEffect(() => {
-    if (initialSelection?.familyId) {
-      setFamilyId(initialSelection.familyId);
-    }
-    if (initialSelection?.patientId) {
-      setPatientId(initialSelection.patientId);
-    }
+    if (initialSelection?.familyId) setFamilyId(initialSelection.familyId);
+    if (initialSelection?.patientId) setPatientId(initialSelection.patientId);
   }, [initialSelection]);
 
-  useEffect(() => {
-    loadPatientData();
-  }, [familyId, patientId, clinicId]);
+  useEffect(() => { loadPatientData(); }, [familyId, patientId, clinicId]);
 
   const loadPatientData = () => {
-    if (!familyId || !patientId) {
-      setActivePatient(null);
-      setActiveFamily(null);
-      return;
-    }
-
-    const db = getLocalDB(clinicId);
-    const fam = db.families?.[familyId] || Object.values(db.families || {}).find((f) => f.id === familyId || f.famId === familyId);
-    const pat = fam?.patients?.[patientId] || Object.values(fam?.patients || {}).find((p) => p.id === patientId || p.patId === patientId);
-
+    if (!familyId || !patientId) { setActivePatient(null); setActiveFamily(null); return; }
+    const db  = getLocalDB(clinicId);
+    const fam = db.families?.[familyId] || Object.values(db.families || {}).find(f => f.id === familyId || f.famId === familyId);
+    const pat = fam?.patients?.[patientId] || Object.values(fam?.patients || {}).find(p => p.id === patientId || p.patId === patientId);
     setActiveFamily(fam || null);
     setActivePatient(pat || null);
   };
 
-  // Treatment Row Handlers
-  const handleTreatmentChange = (index, field, value) => {
+  /* ── Treatment handlers ─────────────────────────────────────────────── */
+  const handleTreatmentChange = (i, field, val) => {
     const list = [...treatment];
-    list[index][field] = value;
-
-    // Auto add row if typing on the last row
-    if (index === list.length - 1 && list[index].name.trim() !== '') {
-      list.push({ name: '', qty: '1', cost: 0 });
-    }
+    list[i][field] = val;
+    if (i === list.length - 1 && list[i].name.trim() !== '') list.push({ name: '', qty: '1', cost: 0 });
     setTreatment(list);
-    recalcTotalCharge(list);
+    recalc(list);
   };
-
-  const handleRemoveTreatment = (index) => {
+  const removeTreatment = i => {
     if (treatment.length <= 1) return;
-    const list = treatment.filter((_, i) => i !== index);
+    const list = treatment.filter((_, j) => j !== i);
     setTreatment(list);
-    recalcTotalCharge(list);
+    recalc(list);
   };
-
-  const recalcTotalCharge = (treatList) => {
-    const total = treatList.reduce((acc, item) => acc + (Number(item.cost) || 0), 0);
+  const recalc = list => {
+    const total = list.reduce((s, t) => s + (Number(t.cost) || 0), 0);
     setCharge(total);
-    setReceived(total);
-    setDue(0);
+    setDue(Math.max(0, total - received));
   };
 
-  // Prescription Row Handlers
-  const handlePrescriptionChange = (index, field, value) => {
+  /* ── Prescription handlers ──────────────────────────────────────────── */
+  const handlePrescriptionChange = (i, field, val) => {
     const list = [...prescription];
-    list[index][field] = value;
-
-    if (index === list.length - 1 && list[index].name.trim() !== '') {
-      list.push({ name: '', qty: '10', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF', notes: '' });
+    list[i][field] = val;
+    if (i === list.length - 1 && list[i].name.trim() !== '') {
+      list.push({ name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' });
     }
     setPrescription(list);
   };
-
-  const handleRemovePrescription = (index) => {
+  const removePrescription = i => {
     if (prescription.length <= 1) return;
-    setPrescription(prescription.filter((_, i) => i !== index));
+    setPrescription(prescription.filter((_, j) => j !== i));
   };
 
-  // Financial Changes
-  const handleReceivedChange = (val) => {
+  /* ── Financial ─────────────────────────────────────────────────────── */
+  const handleReceivedChange = val => {
     const rec = Number(val) || 0;
     setReceived(rec);
     setDue(Math.max(0, charge - rec));
   };
 
-  const handleChargeChange = (val) => {
-    const ch = Number(val) || 0;
-    setCharge(ch);
-    setDue(Math.max(0, ch - received));
-  };
-
-  // Save Consultation Case
+  /* ── Save ───────────────────────────────────────────────────────────── */
   const handleSaveVisit = (andPrint = false) => {
-    if (!activePatient || !activeFamily) {
-      showToast('Please select a patient first.', 'error');
-      return;
-    }
+    if (!activePatient || !activeFamily) { showToast('Please select a patient first.', 'error'); return; }
 
-    const cleanTreatment = treatment.filter((t) => t.name.trim() !== '');
-    const cleanPrescription = prescription.filter((p) => p.name.trim() !== '');
-
-    const db = getLocalDB(clinicId);
-    const fam = db.families[activeFamily.id || activeFamily.famId];
-    const pat = fam.patients[activePatient.id || activePatient.patId];
+    const cleanTx  = treatment.filter(t => t.name.trim() !== '');
+    const cleanRx  = prescription.filter(p => p.name.trim() !== '');
+    const db       = getLocalDB(clinicId);
+    const fam      = db.families[activeFamily.id || activeFamily.famId];
+    const pat      = fam.patients[activePatient.id || activePatient.patId];
     if (!pat.visits) pat.visits = [];
 
     const visitNum = editingCaseId
-      ? pat.visits.find((v) => v.caseId === editingCaseId)?.visitNum || 1
+      ? pat.visits.find(v => v.caseId === editingCaseId)?.visitNum || 1
       : pat.visits.length + 1;
 
     const caseId = editingCaseId || makeCaseId(activeFamily.id || activeFamily.famId, activePatient.id || activePatient.patId, visitNum);
 
     const visitData = {
-      caseId,
-      visitNum,
-      date: visitDate,
-      time: visitTime,
-      weight,
-      bp,
-      sugar,
-      pulse,
-      reference,
-      otherNotes,
-      complaint: complaint.trim(),
-      diagnosis: diagnosis.trim(),
-      investigation: investigation.trim(),
-      treatment: cleanTreatment,
-      prescription: cleanPrescription,
-      charge: Number(charge),
-      received: Number(received),
-      due: Number(due),
+      caseId, visitNum,
+      date: visitDate, time: visitTime,
+      bp, sugar, otherVitals: other,
+      reference, investigation: investigation.trim(),
+      complaint: complaint.trim(), diagnosis: diagnosis.trim(),
+      dietary: dietary.trim(),
+      treatment: cleanTx, prescription: cleanRx,
+      charge: Number(charge), received: Number(received), due: Number(due),
       labReportFile: labReportFile ? labReportFile.name : null,
     };
 
     if (editingCaseId) {
-      const idx = pat.visits.findIndex((v) => v.caseId === editingCaseId);
-      if (idx !== -1) {
-        pat.visits[idx] = visitData;
-      }
+      const idx = pat.visits.findIndex(v => v.caseId === editingCaseId);
+      if (idx !== -1) pat.visits[idx] = visitData;
       showToast(`Case #${caseId} updated successfully.`);
     } else {
       pat.visits.unshift(visitData);
-      showToast(`New Visit #${caseId} recorded successfully!`);
-
-      // Auto-learn new complaints or investigations
-      if (complaint.trim()) {
-        addSharedMasterItem('complaints', { name: complaint.trim(), category: 'General' });
-      }
-      if (investigation.trim()) {
-        addSharedMasterItem('investigations', { name: investigation.trim(), category: 'General' });
-      }
+      showToast(`New Visit #${visitNum} recorded successfully!`);
+      if (complaint.trim()) addSharedMasterItem('complaints', { name: complaint.trim(), category: 'General' });
+      if (investigation.trim()) addSharedMasterItem('investigations', { name: investigation.trim(), category: 'General' });
     }
 
     saveLocalDB(clinicId, db);
     loadPatientData();
 
-    // Async sync to backend
     apiFetch('/consultations', {
       method: editingCaseId ? 'PUT' : 'POST',
-      body: {
-        ...visitData,
-        familyId: activeFamily.id || activeFamily.famId,
-        patientId: activePatient.id || activePatient.patId,
-      },
+      body: { ...visitData, familyId: activeFamily.id || activeFamily.famId, patientId: activePatient.id || activePatient.patId },
     }).catch(() => {});
 
-    // Close form
     resetVisitForm();
-
-    if (andPrint) {
-      setPrintingVisit(visitData);
-    }
+    if (andPrint) setPrintingVisit(visitData);
   };
 
   const resetVisitForm = () => {
     setIsFormOpen(false);
     setEditingCaseId(null);
-    setVisitDate(todayISO());
-    setVisitTime(nowTime());
-    setWeight('');
-    setBp('');
-    setSugar('');
-    setPulse('');
-    setReference('Self');
-    setOtherNotes('');
-    setComplaint('');
-    setDiagnosis('');
-    setInvestigation('');
-    setTreatment([{ name: 'Clinical Consultation', qty: '1', cost: 300 }]);
-    setPrescription([{ name: '', qty: '10', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF', notes: '' }]);
-    setCharge(300);
-    setReceived(300);
-    setDue(0);
+    setVisitDate(todayISO()); setVisitTime(nowTime());
+    setBp(''); setSugar(''); setOther(''); setReference(''); setInvestigation(''); setComplaint('');
+    setDietary(''); setDiagnosis('');
+    setTreatment([{ name: '', qty: '1', cost: 0 }]);
+    setPrescription([{ name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }]);
+    setCharge(0); setReceived(0); setDue(0);
     setLabReportFile(null);
   };
 
-  const handleEditVisit = (v) => {
+  const handleEditVisit = v => {
     setEditingCaseId(v.caseId);
-    setVisitDate(v.date || todayISO());
-    setVisitTime(v.time || nowTime());
-    setWeight(v.weight || '');
-    setBp(v.bp || '');
-    setSugar(v.sugar || '');
-    setPulse(v.pulse || '');
-    setReference(v.reference || 'Self');
-    setOtherNotes(v.otherNotes || '');
-    setComplaint(v.complaint || '');
-    setDiagnosis(v.diagnosis || '');
-    setInvestigation(v.investigation || '');
-    setTreatment(v.treatment && v.treatment.length > 0 ? v.treatment : [{ name: '', qty: '1', cost: 0 }]);
-    setPrescription(v.prescription && v.prescription.length > 0 ? v.prescription : [{ name: '', qty: '1', mor: '0', noon: '0', eve: '0', ngt: '0', timing: 'AF', notes: '' }]);
-    setCharge(v.charge || 0);
-    setReceived(v.received || 0);
-    setDue(v.due || 0);
+    setVisitDate(v.date || todayISO()); setVisitTime(v.time || nowTime());
+    setBp(v.bp || ''); setSugar(v.sugar || ''); setOther(v.otherVitals || '');
+    setReference(v.reference || ''); setInvestigation(v.investigation || '');
+    setComplaint(v.complaint || ''); setDiagnosis(v.diagnosis || '');
+    setDietary(v.dietary || '');
+    setTreatment(v.treatment?.length ? v.treatment : [{ name: '', qty: '1', cost: 0 }]);
+    setPrescription(v.prescription?.length ? v.prescription : [{ name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }]);
+    setCharge(v.charge || 0); setReceived(v.received || 0); setDue(v.due || 0);
     setIsFormOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteVisit = (caseId) => {
+  const handleDeleteVisit = caseId => {
     if (!window.confirm(`Delete clinical visit case #${caseId}?`)) return;
-
-    const db = getLocalDB(clinicId);
+    const db  = getLocalDB(clinicId);
     const fam = db.families[activeFamily.id || activeFamily.famId];
     const pat = fam.patients[activePatient.id || activePatient.patId];
-    pat.visits = pat.visits.filter((v) => v.caseId !== caseId);
-
+    pat.visits = pat.visits.filter(v => v.caseId !== caseId);
     saveLocalDB(clinicId, db);
     showToast('Visit case entry deleted.');
     loadPatientData();
-
     apiFetch(`/consultations/${caseId}`, { method: 'DELETE' }).catch(() => {});
   };
 
-  // Searching patients when none active
-  const handleSearchChange = (e) => {
+  const handleDeletePatient = () => {
+    if (!window.confirm(`Permanently delete patient "${activePatient.name}" and all their visit records?`)) return;
+    const db  = getLocalDB(clinicId);
+    const fam = db.families[activeFamily.id || activeFamily.famId];
+    delete fam.patients[activePatient.id || activePatient.patId];
+    saveLocalDB(clinicId, db);
+    showToast('Patient record deleted.');
+    setFamilyId(null); setPatientId(null);
+  };
+
+  /* ── Search ─────────────────────────────────────────────────────────── */
+  const handleSearchChange = e => {
     const q = e.target.value;
     setSearchQuery(q);
     const query = q.trim().toLowerCase();
-    if (!query) {
-      setSearchResults([]);
-      return;
-    }
-
+    if (!query) { setSearchResults([]); return; }
     const db = getLocalDB(clinicId);
     const results = [];
     for (const f of Object.values(db.families || {})) {
@@ -332,13 +281,10 @@ export default function ConsultationView({
           (p.phone && p.phone.includes(query))
         ) {
           results.push({
-            familyId: f.id || f.famId,
-            patientId: p.id || p.patId,
-            patientName: p.name,
-            headName: f.headName,
-            relation: p.relation,
-            phone: p.phone || f.phone,
-            area: p.area || f.area,
+            familyId: f.id || f.famId, patientId: p.id || p.patId,
+            patientName: p.name, headName: f.headName,
+            relation: p.relation, phone: p.phone || f.phone,
+            area: p.area || f.area, famId: f.id || f.famId,
           });
         }
       }
@@ -346,888 +292,767 @@ export default function ConsultationView({
     setSearchResults(results);
   };
 
-  // Calculate dues
-  const personalDue = (activePatient?.visits || []).reduce((acc, v) => acc + (Number(v.due) || 0), 0);
-  const familyDue = activeFamily
-    ? Object.values(activeFamily.patients || {}).reduce((famAcc, p) => {
-        return famAcc + (p.visits || []).reduce((patAcc, v) => patAcc + (Number(v.due) || 0), 0);
-      }, 0)
+  /* ── Derived ─────────────────────────────────────────────────────────── */
+  const personalDue = (activePatient?.visits || []).reduce((s, v) => s + (Number(v.due) || 0), 0);
+  const familyDue   = activeFamily
+    ? Object.values(activeFamily.patients || {}).reduce((fa, p) =>
+        fa + (p.visits || []).reduce((pa, v) => pa + (Number(v.due) || 0), 0), 0)
     : 0;
 
-  // Filter history
   let historyVisits = activePatient?.visits || [];
-  if (showDueOnly) {
-    historyVisits = historyVisits.filter((v) => Number(v.due) > 0);
-  }
-  if (historyDateFilter) {
-    historyVisits = historyVisits.filter((v) => v.date === historyDateFilter);
-  }
+  if (showDueOnly) historyVisits = historyVisits.filter(v => Number(v.due) > 0);
+  if (historyDateFilter) historyVisits = historyVisits.filter(v => v.date === historyDateFilter);
 
-  // Render search selection view if no patient active
+  const visitNum = (activePatient?.visits?.length || 0) + 1;
+
+  const recentPatients = () => {
+    const db = getLocalDB(clinicId);
+    const results = [];
+    for (const f of Object.values(db.families || {})) {
+      for (const p of Object.values(f.patients || {})) {
+        results.push({
+          familyId: f.id || f.famId, patientId: p.id || p.patId,
+          patientName: p.name, headName: f.headName, relation: p.relation,
+          famId: f.id || f.famId, area: f.area || p.area,
+        });
+      }
+    }
+    return results.slice(0, 8);
+  };
+
+  /* ── SEARCH / EMPTY STATE VIEW ───────────────────────────────────────── */
   if (!activePatient || !activeFamily) {
+    const recents = recentPatients();
     return (
-      <div className="cms-page-container">
-        <div className="cms-card" style={{ maxWidth: '640px', margin: '40px auto', padding: '32px', textAlign: 'center' }}>
-          <div
-            style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: 'rgba(9, 92, 84, 0.1)',
-              color: 'var(--primary)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '26px',
-              marginBottom: '16px',
-            }}
-          >
-            <i className="fa-solid fa-clipboard-user"></i>
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px', color: 'var(--text)' }}>
-            Select Patient for Clinical Consultation
-          </h2>
-          <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '24px' }}>
-            Search by patient name, family head, or phone number to open clinical case record
-          </p>
-
-          <div style={{ position: 'relative', marginBottom: '20px' }}>
-            <i
-              className="fa-solid fa-magnifying-glass"
-              style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
-            ></i>
-            <input
-              type="text"
-              className="cms-input"
-              style={{ width: '100%', paddingLeft: '40px', height: '44px', fontSize: '14px' }}
-              placeholder="Type patient name, phone, or ID..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              autoFocus
-            />
-          </div>
-
-          {searchResults.length > 0 && (
-            <div style={{ textAlign: 'left', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
-              {searchResults.slice(0, 6).map((r, i) => (
-                <div
-                  key={`${r.patientId}-${i}`}
-                  onClick={() => {
-                    setFamilyId(r.familyId);
-                    setPatientId(r.patientId);
-                  }}
-                  style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                  className="cms-search-result-item"
-                >
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>
-                      {r.patientName} {r.relation && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({r.relation})</span>}
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                      Head: {r.headName} · {r.area || 'General'} · Phone: {r.phone || '-'}
-                    </div>
-                  </div>
-                  <span className="cms-pill font-mono" style={{ fontSize: '11px' }}>{r.patientId}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            <button type="button" className="cms-btn cms-btn-outline" onClick={() => onNavigate('patient')}>
-              <i className="fa-solid fa-user-plus"></i> Enroll New Patient (F2)
-            </button>
-            <button type="button" className="cms-btn cms-btn-ghost" onClick={() => onNavigate('dashboard')}>
-              Dashboard (F4)
-            </button>
-          </div>
+      <div className="cms-page-container" style={{ padding: '16px 20px' }}>
+        {/* Search bar */}
+        <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <i className="fa-solid fa-magnifying-glass"
+            style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '15px' }} />
+          <input
+            type="text"
+            className="cms-input"
+            style={{ width: '100%', paddingLeft: '42px', height: '44px', fontSize: '14px', borderRadius: '10px', boxSizing: 'border-box' }}
+            placeholder="Find Patient by Name, Patient ID, or Family Head..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            autoFocus
+          />
         </div>
+
+        {/* Results */}
+        {searchResults.length > 0 ? (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px' }}>
+            {searchResults.slice(0, 8).map((r, i) => (
+              <div
+                key={`${r.patientId}-${i}`}
+                onClick={() => { setFamilyId(r.familyId); setPatientId(r.patientId); }}
+                style={{
+                  padding: '14px 18px', borderBottom: i < searchResults.length - 1 ? '1px solid var(--border)' : 'none',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>
+                    {r.patientName}
+                    {r.relation && <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 400, marginLeft: '6px' }}>({r.relation})</span>}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    {r.headName} · FAM {r.famId} · {r.area || ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="font-mono" style={{ background: 'var(--surface-alt)', borderRadius: '6px', padding: '3px 10px', fontSize: '12px', fontWeight: 700 }}>
+                    PT {r.patientId}
+                  </span>
+                  <i className="fa-solid fa-arrow-right" style={{ color: 'var(--text-muted)' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Empty state */
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '50px 20px', textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: 'rgba(9,92,84,0.08)', color: 'var(--primary)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '28px', marginBottom: '16px',
+            }}>
+              <i className="fa-solid fa-user-group" />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 8px', color: 'var(--text)' }}>
+              Search Patient to Open Case Record
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
+              Type patient name, 8-digit Patient ID, Family Head name, or Area in the search bar above to start clinical consultation and review case history.
+            </p>
+          </div>
+        )}
+
+        {/* Recent patients */}
+        {!searchQuery && recents.length > 0 && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Recent Patients in Clinic (Click to open record):
+            </div>
+            {recents.map((r, i) => (
+              <div
+                key={`rec-${r.patientId}-${i}`}
+                onClick={() => { setFamilyId(r.familyId); setPatientId(r.patientId); }}
+                style={{
+                  padding: '14px 18px', borderBottom: i < recents.length - 1 ? '1px solid var(--border)' : 'none',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>
+                    {r.patientName}
+                    {r.relation && <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 500, marginLeft: '6px' }}>({r.relation})</span>}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    {r.headName} · FAM {r.famId} · {r.area || ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="font-mono" style={{ background: 'var(--primary)', color: '#fff', borderRadius: '6px', padding: '3px 10px', fontSize: '12px', fontWeight: 700 }}>
+                    PT {r.patientId}
+                  </span>
+                  <i className="fa-solid fa-arrow-right" style={{ color: 'var(--text-muted)' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
+  /* ── PATIENT RECORD VIEW ─────────────────────────────────────────────── */
   return (
-    <div className="cms-page-container">
-      {/* Active Patient Header Banner */}
-      <div
-        className="cms-card cms-patient-header"
-        style={{
-          padding: '16px 20px',
-          marginBottom: '16px',
-          borderRadius: '10px',
-          background: 'var(--surface)',
-          borderLeft: '5px solid var(--primary)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '19px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
-                {activePatient.name}
-              </h2>
-              <span className="cms-pill" style={{ background: 'rgba(9,92,84,0.1)', color: 'var(--primary)', fontWeight: 700 }}>
-                {activePatient.relation || 'Member'}
-              </span>
-              <span className="cms-pill font-mono" style={{ fontSize: '12px' }}>
-                ID: {activePatient.id || activePatient.patId}
-              </span>
-              {activePatient.bloodGroup && (
-                <span className="cms-pill" style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700 }}>
-                  <i className="fa-solid fa-droplet" style={{ marginRight: '4px' }}></i>
-                  {activePatient.bloodGroup}
-                </span>
-              )}
-              {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' && (
-                <span className="cms-pill" style={{ background: '#fee2e2', color: '#dc2626', fontWeight: 700 }}>
-                  <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '4px' }}></i>
-                  Allergy: {activePatient.allergy}
-                </span>
-              )}
-            </div>
+    <div className="cms-page-container" style={{ padding: '12px 16px' }}>
 
-            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '6px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-              <span><i className="fa-solid fa-calendar"></i> Age: {activePatient.age ? `${activePatient.age} Y` : '-'}</span>
-              <span><i className="fa-solid fa-venus-mars"></i> {activePatient.gender || '-'}</span>
-              <span><i className="fa-solid fa-phone"></i> {activePatient.phone || activeFamily.phone || '-'}</span>
-              <span><i className="fa-solid fa-users"></i> Head: <strong>{activeFamily.headName}</strong> ({activeFamily.id || activeFamily.famId})</span>
-              <span><i className="fa-solid fa-location-dot"></i> {activePatient.area || activeFamily.area || '-'}</span>
-            </div>
-          </div>
-
-          {/* Dues & Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="cms-btn cms-btn-ghost"
-              onClick={() => onNavigate('patient', { familyId: activeFamily.id || activeFamily.famId, editPatientId: activePatient.id || activePatient.patId })}
-              style={{ fontSize: '12px', padding: '6px 10px' }}
-            >
-              <i className="fa-solid fa-user-pen"></i> Edit Patient
-            </button>
-
-            <button
-              type="button"
-              className={`cms-btn ${personalDue > 0 ? 'cms-btn-danger' : 'cms-btn-ghost'}`}
-              onClick={() => setShowDueOnly(!showDueOnly)}
-              style={{ fontSize: '12px', padding: '6px 12px' }}
-              title="Click to highlight personal due cases"
-            >
-              <i className="fa-solid fa-user"></i> Patient Due: {fmtMoney(personalDue)}
-              {showDueOnly && <span style={{ marginLeft: '4px' }}>✕</span>}
-            </button>
-
-            <button
-              type="button"
-              className={`cms-btn ${subView === 'family-due' ? 'cms-btn-primary' : 'cms-btn-outline'}`}
-              onClick={() => setSubView(subView === 'family-due' ? 'case' : 'family-due')}
-              style={{ fontSize: '12px', padding: '6px 12px' }}
-            >
-              <i className="fa-solid fa-people-roof"></i> Family Due: {fmtMoney(familyDue)}
-            </button>
-
-            <button
-              type="button"
-              className="cms-btn cms-btn-primary"
-              onClick={() => {
-                if (isFormOpen) {
-                  resetVisitForm();
-                } else {
-                  setIsFormOpen(true);
-                }
-              }}
-              style={{ fontSize: '13px' }}
-            >
-              <i className={`fa-solid ${isFormOpen ? 'fa-xmark' : 'fa-plus'}`}></i>
-              {isFormOpen ? 'Cancel Form' : 'New Visit (F3)'}
-            </button>
-          </div>
-        </div>
+      {/* Top search bar (persists when patient selected) */}
+      <div style={{ position: 'relative', marginBottom: '14px' }}>
+        <i className="fa-solid fa-magnifying-glass"
+          style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '14px' }} />
+        <input
+          type="text"
+          className="cms-input"
+          style={{ width: '100%', paddingLeft: '40px', height: '40px', fontSize: '13px', borderRadius: '8px', boxSizing: 'border-box' }}
+          placeholder="Find Patient by Name, Patient ID, or Family Head..."
+          value={searchQuery}
+          onChange={e => {
+            handleSearchChange(e);
+            if (e.target.value) { setFamilyId(null); setPatientId(null); }
+          }}
+        />
       </div>
 
-      {/* Subview: Family Due Breakdown */}
-      {subView === 'family-due' && (
-        <div className="cms-card" style={{ marginBottom: '20px', background: 'var(--surface-alt)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '0 0 2px', color: 'var(--text)' }}>
-                Household Family Ledger: {activeFamily.headName}
-              </h3>
-              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
-                All enrolled members and outstanding case balances
-              </p>
-            </div>
-            <button type="button" className="cms-btn cms-btn-ghost" onClick={() => setSubView('case')}>
-              <i className="fa-solid fa-xmark"></i> Close Ledger
-            </button>
-          </div>
-
-          <div className="cms-table-responsive">
-            <table className="cms-table">
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Relation</th>
-                  <th>Age/Sex</th>
-                  <th>Total Visits</th>
-                  <th>Outstanding Due</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(activeFamily.patients || {}).map((m) => {
-                  const mDue = (m.visits || []).reduce((sum, v) => sum + (Number(v.due) || 0), 0);
-                  return (
-                    <tr key={m.id || m.patId} style={{ background: (m.id || m.patId) === (activePatient.id || activePatient.patId) ? 'rgba(9,92,84,0.06)' : 'transparent' }}>
-                      <td>
-                        <strong>{m.name}</strong>
-                        {(m.id || m.patId) === (activePatient.id || activePatient.patId) && (
-                          <span className="cms-pill" style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--primary)', color: '#fff' }}>Active</span>
-                        )}
-                      </td>
-                      <td>{m.relation || 'Member'}</td>
-                      <td>{m.age ? `${m.age} Y` : '-'} · {m.gender || '-'}</td>
-                      <td>{(m.visits || []).length} visits</td>
-                      <td>
-                        {mDue > 0 ? (
-                          <span className="cms-pill cms-badge-due font-mono">{fmtMoney(mDue)}</span>
-                        ) : (
-                          <span className="cms-pill cms-badge-paid">Clear</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          className="cms-btn cms-btn-ghost"
-                          onClick={() => {
-                            setPatientId(m.id || m.patId);
-                            setSubView('case');
-                          }}
-                          style={{ fontSize: '11.5px', padding: '4px 8px' }}
-                        >
-                          <i className="fa-solid fa-folder-open"></i> Switch to Member
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* New Visit / Case Entry Form Card */}
-      {isFormOpen && (
-        <div className="cms-card cms-visit-form-card" style={{ marginBottom: '24px', border: '2px solid var(--primary)' }}>
-          <form onSubmit={(e) => { e.preventDefault(); handleSaveVisit(false); }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderBottom: '1.5px solid var(--border)',
-              paddingBottom: '12px',
-              marginBottom: '16px',
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 2px', color: 'var(--primary)' }}>
-                <i className="fa-solid fa-file-medical" style={{ marginRight: '8px' }}></i>
-                {editingCaseId ? `Edit Consultation Case #${editingCaseId}` : 'New Clinical Consultation Entry'}
-              </h3>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                OPD visit vitals, diagnosis, clinical procedures and prescription
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="date"
-                className="cms-input"
-                style={{ width: '140px', height: '34px', fontSize: '12.5px' }}
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
-              />
-              <input
-                type="text"
-                className="cms-input"
-                style={{ width: '100px', height: '34px', fontSize: '12.5px' }}
-                value={visitTime}
-                onChange={(e) => setVisitTime(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Vitals Ribbon */}
-          <div
-            style={{
-              padding: '12px',
-              background: 'var(--surface-alt, #f8fafc)',
-              borderRadius: '8px',
-              border: '1px solid var(--border)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '12px',
-              marginBottom: '18px',
-            }}
-          >
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Weight (Kg)
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="e.g. 72"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Blood Pressure (mmHg)
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="120/80"
-                value={bp}
-                onChange={(e) => setBp(e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Blood Sugar (mg/dL)
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="110"
-                value={sugar}
-                onChange={(e) => setSugar(e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Pulse (bpm)
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="76"
-                value={pulse}
-                onChange={(e) => setPulse(e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Referred By
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="Self / Dr. Shah"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Clinical Findings: Complaint, Diagnosis, Investigations */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Chief Complaints &amp; Symptoms
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="e.g. Fever, Cough, Headache"
-                value={complaint}
-                onChange={(e) => setComplaint(e.target.value)}
-                list="complaints-list"
-              />
-              <datalist id="complaints-list">
-                {complaintsMaster.map((c) => (
-                  <option key={c.id} value={c.name} />
-                ))}
-              </datalist>
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Provisional Diagnosis
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="e.g. Acute Viral Bronchitis, URTI"
-                value={diagnosis}
-                onChange={(e) => setDiagnosis(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Advised Investigations / Labs
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="e.g. CBC, Lipid Profile, Chest X-Ray"
-                value={investigation}
-                onChange={(e) => setInvestigation(e.target.value)}
-                list="investigations-list"
-              />
-              <datalist id="investigations-list">
-                {investigationsMaster.map((inv) => (
-                  <option key={inv.id} value={inv.name} />
-                ))}
-              </datalist>
-            </div>
-          </div>
-
-          {/* Section: Treatment & In-Clinic Procedures */}
-          <div style={{ marginBottom: '22px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark, #334155)', textTransform: 'uppercase' }}>
-                <i className="fa-solid fa-syringe" style={{ marginRight: '6px', color: 'var(--primary)' }}></i>
-                Treatment &amp; In-Clinic Procedures
-              </span>
-              <button
-                type="button"
-                className="cms-btn cms-btn-ghost"
-                onClick={() => setTreatment([...treatment, { name: '', qty: '1', cost: 0 }])}
-                style={{ fontSize: '11px', padding: '2px 8px' }}
-              >
-                + Add Procedure
-              </button>
-            </div>
-
-            <table className="cms-table" style={{ background: '#ffffff' }}>
-              <thead>
-                <tr>
-                  <th>Procedure / Treatment Item</th>
-                  <th style={{ width: '90px' }}>Qty</th>
-                  <th style={{ width: '130px' }}>Charge (₹)</th>
-                  <th style={{ width: '50px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {treatment.map((tItem, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        placeholder="e.g. Clinical Consultation, Nebulization, Dressing"
-                        value={tItem.name}
-                        onChange={(e) => handleTreatmentChange(idx, 'name', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        value={tItem.qty}
-                        onChange={(e) => handleTreatmentChange(idx, 'qty', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="cms-input font-mono"
-                        value={tItem.cost}
-                        onChange={(e) => handleTreatmentChange(idx, 'cost', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTreatment(idx)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section: Prescription Medicines */}
-          <div style={{ marginBottom: '22px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark, #334155)', textTransform: 'uppercase' }}>
-                <i className="fa-solid fa-pills" style={{ marginRight: '6px', color: 'var(--primary)' }}></i>
-                Prescription (Medicines)
-              </span>
-              <button
-                type="button"
-                className="cms-btn cms-btn-ghost"
-                onClick={() =>
-                  setPrescription([
-                    ...prescription,
-                    { name: '', qty: '10', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF', notes: '' },
-                  ])
-                }
-                style={{ fontSize: '11px', padding: '2px 8px' }}
-              >
-                + Add Medicine
-              </button>
-            </div>
-
-            <table className="cms-table" style={{ background: '#ffffff' }}>
-              <thead>
-                <tr>
-                  <th>Medicine Name</th>
-                  <th style={{ width: '70px' }}>Qty</th>
-                  <th style={{ width: '45px', textAlign: 'center' }}>M</th>
-                  <th style={{ width: '45px', textAlign: 'center' }}>N</th>
-                  <th style={{ width: '45px', textAlign: 'center' }}>E</th>
-                  <th style={{ width: '45px', textAlign: 'center' }}>Nt</th>
-                  <th style={{ width: '90px' }}>Timing</th>
-                  <th>Notes</th>
-                  <th style={{ width: '45px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {prescription.map((pItem, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        placeholder="Search medicine..."
-                        value={pItem.name}
-                        onChange={(e) => handlePrescriptionChange(idx, 'name', e.target.value)}
-                        list="medicines-options"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        value={pItem.qty}
-                        onChange={(e) => handlePrescriptionChange(idx, 'qty', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        style={{ textAlign: 'center' }}
-                        value={pItem.mor}
-                        onChange={(e) => handlePrescriptionChange(idx, 'mor', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        style={{ textAlign: 'center' }}
-                        value={pItem.noon}
-                        onChange={(e) => handlePrescriptionChange(idx, 'noon', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        style={{ textAlign: 'center' }}
-                        value={pItem.eve}
-                        onChange={(e) => handlePrescriptionChange(idx, 'eve', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        style={{ textAlign: 'center' }}
-                        value={pItem.ngt}
-                        onChange={(e) => handlePrescriptionChange(idx, 'ngt', e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <select
-                        className="cms-input"
-                        value={pItem.timing}
-                        onChange={(e) => handlePrescriptionChange(idx, 'timing', e.target.value)}
-                      >
-                        <option value="AF">AF (After Food)</option>
-                        <option value="BF">BF (Before Food)</option>
-                        <option value="HS">HS (Bedtime)</option>
-                        <option value="OD">OD (Once Daily)</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        placeholder="Instructions"
-                        value={pItem.notes}
-                        onChange={(e) => handlePrescriptionChange(idx, 'notes', e.target.value)}
-                      />
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePrescription(idx)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}
-                      >
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <datalist id="medicines-options">
-              {medicinesMaster.map((m) => (
-                <option key={m.id} value={m.name} />
-              ))}
-            </datalist>
-          </div>
-
-          {/* Financials & Submission Bar */}
-          <div
-            style={{
-              padding: '16px',
-              background: 'var(--surface-alt, #f8fafc)',
-              borderRadius: '8px',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  Total Charge (₹)
-                </label>
-                <input
-                  type="number"
-                  className="cms-input font-mono"
-                  style={{ width: '120px', fontWeight: 700 }}
-                  value={charge}
-                  onChange={(e) => handleChargeChange(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  Received Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  className="cms-input font-mono"
-                  style={{ width: '120px', fontWeight: 700, color: '#059669' }}
-                  value={received}
-                  onChange={(e) => handleReceivedChange(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  Due Balance (₹)
-                </label>
-                <span className={`cms-pill font-mono ${due > 0 ? 'cms-badge-due' : 'cms-badge-paid'}`} style={{ fontSize: '14px', fontWeight: 800 }}>
-                  {fmtMoney(due)}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="button" className="cms-btn cms-btn-outline" onClick={resetVisitForm}>
-                Cancel
-              </button>
-              <button type="button" className="cms-btn cms-btn-ghost" onClick={() => handleSaveVisit(false)}>
-                <i className="fa-solid fa-floppy-disk"></i> Save Only
-              </button>
-              <button type="button" className="cms-btn cms-btn-primary" onClick={() => handleSaveVisit(true)}>
-                <i className="fa-solid fa-print"></i> Save &amp; Print Rx
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-      )}
-
-      {/* Visit History Section */}
-      <div className="cms-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 2px', color: 'var(--text)' }}>
-              Consultation Case History ({historyVisits.length})
-            </h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Chronological OPD medical records and prescriptions
+      {/* ── PATIENT HEADER BANNER ─────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '14px 18px', marginBottom: '14px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px',
+      }}>
+        {/* Left: name + badges */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {activePatient.name}
             </span>
+            {personalDue > 0 && (
+              <span style={{
+                background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5',
+                borderRadius: '6px', padding: '2px 10px', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px',
+              }}>
+                <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: {fmtMoney(personalDue)}
+              </span>
+            )}
+            {personalDue === 0 && (
+              <span style={{
+                background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5',
+                borderRadius: '6px', padding: '2px 10px', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px',
+              }}>
+                <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: ₹0
+              </span>
+            )}
           </div>
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input
-              type="date"
-              className="cms-input"
-              style={{ width: '140px', height: '34px', fontSize: '12px' }}
-              value={historyDateFilter}
-              onChange={(e) => setHistoryDateFilter(e.target.value)}
-              title="Filter by visit date"
-            />
-            {historyDateFilter && (
-              <button
-                type="button"
-                className="cms-btn cms-btn-ghost"
-                onClick={() => setHistoryDateFilter('')}
-                style={{ fontSize: '12px' }}
-              >
-                Show All Dates
-              </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12.5px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>Family:</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{activeFamily.headName}</span>
+            <span style={{ color: 'var(--text-muted)' }}>({activeFamily.area || activePatient.area || '—'})</span>
+            {familyDue > 0 && (
+              <span style={{
+                background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a',
+                borderRadius: '5px', padding: '1px 8px', fontSize: '11.5px', fontWeight: 700,
+              }}>
+                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '3px' }} />
+                FAM DUE: {fmtMoney(familyDue)}
+              </span>
+            )}
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span style={{ color: 'var(--text)' }}>Age {activePatient.age || '—'}</span>
+            {activePatient.bloodGroup && (
+              <>
+                <span style={{ color: 'var(--text-muted)' }}>·</span>
+                <span style={{ color: 'var(--text)' }}>{activePatient.bloodGroup}</span>
+              </>
+            )}
+            {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' && (
+              <>
+                <span style={{ color: 'var(--text-muted)' }}>·</span>
+                <span style={{ color: '#dc2626', fontWeight: 600 }}>Allergy: {activePatient.allergy}</span>
+              </>
             )}
           </div>
         </div>
 
+        {/* Right: action buttons */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={handleDeletePatient}
+            style={{
+              background: '#fee2e2', color: '#dc2626', border: '1.5px solid #fca5a5',
+              borderRadius: '7px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Delete Patient
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('patient', { familyId: activeFamily.id || activeFamily.famId, editPatientId: activePatient.id || activePatient.patId })}
+            style={{
+              background: 'transparent', color: 'var(--text)', border: '1.5px solid var(--border)',
+              borderRadius: '7px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Edit Patient
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (isFormOpen) resetVisitForm(); else setIsFormOpen(true); }}
+            style={{
+              background: isFormOpen ? '#dc2626' : 'var(--primary)', color: '#fff', border: 'none',
+              borderRadius: '7px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px',
+            }}
+          >
+            {isFormOpen ? (
+              <><i className="fa-solid fa-xmark" /> Cancel</>
+            ) : (
+              <><i className="fa-solid fa-plus" /> + New Visit
+                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '11px', fontWeight: 800, marginLeft: '2px' }}>F6</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── NEW VISIT FORM CARD ───────────────────────────────────────────── */}
+      {isFormOpen && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '10px', padding: '16px 18px', marginBottom: '14px',
+        }}>
+          {/* Form title row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>
+              {editingCaseId ? `Edit Visit #${editingCaseId}` : `New Visit #${visitNum}`}
+            </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              {fmtDMY(visitDate)}
+            </span>
+            <input
+              type="date"
+              className="cms-input"
+              style={{ width: '130px', height: '30px', fontSize: '12px' }}
+              value={visitDate}
+              onChange={e => setVisitDate(e.target.value)}
+              title="Change visit date"
+            />
+            {/* Attach report button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                background: labReportFile ? 'var(--primary)' : 'rgba(9,92,84,0.08)',
+                color: labReportFile ? '#fff' : 'var(--primary)',
+                border: '1.5px solid var(--primary)', borderRadius: '6px',
+                padding: '4px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '5px',
+              }}
+            >
+              <i className="fa-solid fa-paperclip" />
+              {labReportFile ? labReportFile.name.slice(0, 14) + '…' : 'Attach Report'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              style={{ display: 'none' }}
+              onChange={e => setLabReportFile(e.target.files[0] || null)}
+            />
+            <button
+              type="button"
+              onClick={resetVisitForm}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1 }}
+              title="Close form"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* ── Vitals row (all inline, 6 columns) ── */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr 1fr 2fr 2fr',
+            gap: '10px', marginBottom: '14px',
+          }}>
+            {/* BP */}
+            <div>
+              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>BP</label>
+              <input type="text" className="cms-input" style={{ height: '32px', fontSize: '13px' }} placeholder="120/80"
+                value={bp} onChange={e => setBp(e.target.value)} />
+            </div>
+            {/* SUGAR */}
+            <div>
+              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>SUGAR</label>
+              <input type="text" className="cms-input" style={{ height: '32px', fontSize: '13px' }} placeholder=""
+                value={sugar} onChange={e => setSugar(e.target.value)} />
+            </div>
+            {/* OTHER */}
+            <div>
+              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>OTHER</label>
+              <input type="text" className="cms-input" style={{ height: '32px', fontSize: '13px' }} placeholder=""
+                value={other} onChange={e => setOther(e.target.value)} />
+            </div>
+            {/* REFERENCE */}
+            <div>
+              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>REFERENCE</label>
+              <input type="text" className="cms-input" style={{ height: '32px', fontSize: '13px' }} placeholder=""
+                value={reference} onChange={e => setReference(e.target.value)} />
+            </div>
+            {/* INVESTIGATION */}
+            <div>
+              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9.5px' }}>(COMMA-SEPARATED)</span>
+              </label>
+              <input type="text" className="cms-input" style={{ height: '32px', fontSize: '12px' }}
+                placeholder="e.g. CBC, I ipd Profile, Urine R/M"
+                value={investigation} onChange={e => setInvestigation(e.target.value)}
+                list="investigations-list" />
+              <datalist id="investigations-list">
+                {investigationsMaster.map(inv => <option key={inv.id} value={inv.name} />)}
+              </datalist>
+            </div>
+            {/* COMPLAINT */}
+            <div>
+              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9.5px' }}>(COMMA-SEPARATED)</span>
+              </label>
+              <input type="text" className="cms-input" style={{ height: '32px', fontSize: '12px' }}
+                placeholder="e.g. Fever, Cough, Headache"
+                value={complaint} onChange={e => setComplaint(e.target.value)}
+                list="complaints-list" />
+              <datalist id="complaints-list">
+                {complaintsMaster.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+          </div>
+
+          {/* ── Dietary section (amber border) ── */}
+          <div style={{
+            border: '1.5px solid #f59e0b', borderRadius: '8px',
+            padding: '10px 14px', marginBottom: '14px', background: '#fffbeb',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: '#92400e', fontStyle: 'italic' }}>
+                <i className="fa-solid fa-bolt" style={{ marginRight: '5px' }} />
+                DIETARY (FOOD ADVICE &amp; RESTRICTIONS)
+              </span>
+              <span style={{ fontSize: '10.5px', color: '#b45309', fontStyle: 'italic', marginRight: '4px' }}>
+                (What to Eat &amp; What NOT to Eat – delete or add food items freely)
+              </span>
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+                {Object.keys(DIET_TEMPLATES).map(key => (
+                  <div key={key} style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      onMouseEnter={() => key === 'URIC' && setUricTooltip(true)}
+                      onMouseLeave={() => key === 'URIC' && setUricTooltip(false)}
+                      onClick={() => {
+                        const text = DIET_TEMPLATES[key];
+                        setDietary(prev => prev ? prev + '\n' + text : text);
+                      }}
+                      style={{
+                        background: '#fff', color: '#92400e', border: '1px solid #f59e0b',
+                        borderRadius: '5px', padding: '2px 7px', fontSize: '11.5px',
+                        fontWeight: 700, cursor: 'pointer',
+                      }}
+                    >
+                      +{key}
+                    </button>
+                    {key === 'URIC' && uricTooltip && (
+                      <div style={{
+                        position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+                        background: '#1e293b', color: '#fff', borderRadius: '6px', padding: '5px 10px',
+                        fontSize: '11px', whiteSpace: 'nowrap', zIndex: 100, pointerEvents: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      }}>
+                        {URIC_TOOLTIP}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  style={{
+                    background: '#fff', color: '#047857', border: '1px solid #6ee7b7',
+                    borderRadius: '5px', padding: '2px 7px', fontSize: '11.5px',
+                    fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  + Add Template
+                </button>
+              </div>
+            </div>
+            <textarea
+              className="cms-input"
+              style={{ width: '100%', minHeight: '52px', resize: 'vertical', fontSize: '12.5px', background: '#fffbeb', border: '1px solid #fde68a', boxSizing: 'border-box' }}
+              placeholder="e.g. DB, BP, ACID, THYROID (type shortcut to suggest, insert and edit advice)..."
+              value={dietary}
+              onChange={e => setDietary(e.target.value)}
+            />
+          </div>
+
+          {/* ── Treatment + Prescription (two columns) ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+
+            {/* TREATMENT (CLINIC) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>
+                  Treatment (Clinic)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTreatment([...treatment, { name: '', qty: '1', cost: 0 }])}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                >
+                  + Add
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {treatment.map((t, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      className="cms-input"
+                      style={{ flex: 1, height: '32px', fontSize: '12.5px' }}
+                      placeholder="Treatment / Procedure name"
+                      value={t.name}
+                      onChange={e => handleTreatmentChange(i, 'name', e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      className="cms-input"
+                      style={{ width: '38px', height: '32px', textAlign: 'center', fontSize: '12.5px', padding: '0 4px' }}
+                      value={t.qty}
+                      onChange={e => handleTreatmentChange(i, 'qty', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeTreatment(i)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PRESCRIPTION (MEDICAL STORE) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase' }}>
+                  Prescription (Medical Store)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPrescription([...prescription, { name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }])}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                >
+                  + Add
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {prescription.map((rx, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      className="cms-input"
+                      style={{ flex: 1, height: '32px', fontSize: '12px' }}
+                      placeholder="Medicine name"
+                      value={rx.name}
+                      onChange={e => handlePrescriptionChange(i, 'name', e.target.value)}
+                      list="medicines-options"
+                    />
+                    {/* qty */}
+                    <input type="text" className="cms-input"
+                      style={{ width: '30px', height: '32px', textAlign: 'center', fontSize: '12px', padding: '0 3px' }}
+                      value={rx.qty} onChange={e => handlePrescriptionChange(i, 'qty', e.target.value)} />
+                    {/* doses */}
+                    {['mor','noon','eve','ngt'].map(field => (
+                      <input key={field} type="text" className="cms-input"
+                        style={{ width: '24px', height: '32px', textAlign: 'center', fontSize: '12px', padding: '0 2px' }}
+                        value={rx[field]} onChange={e => handlePrescriptionChange(i, field, e.target.value)} />
+                    ))}
+                    {/* BF / AF radio */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <input type="radio" name={`timing-${i}`} value="BF" checked={rx.timing === 'BF'} onChange={() => handlePrescriptionChange(i, 'timing', 'BF')} />
+                      BF
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <input type="radio" name={`timing-${i}`} value="AF" checked={rx.timing === 'AF'} onChange={() => handlePrescriptionChange(i, 'timing', 'AF')} />
+                      AF
+                    </label>
+                    <button type="button" onClick={() => removePrescription(i)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}>
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <datalist id="medicines-options">
+                {medicinesMaster.map(m => <option key={m.id} value={m.name} />)}
+              </datalist>
+            </div>
+          </div>
+
+          {/* ── Footer: financials + buttons ── */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
+            borderTop: '1px solid var(--border)', paddingTop: '12px',
+          }}>
+            <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
+              CHARGE ₹ {charge}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>PAID ₹</span>
+              <input
+                type="number"
+                className="cms-input font-mono"
+                style={{ width: '80px', height: '32px', fontSize: '13px', fontWeight: 700, textAlign: 'center' }}
+                value={received}
+                onChange={e => handleReceivedChange(e.target.value)}
+              />
+            </div>
+            <span style={{ fontSize: '13.5px', fontWeight: 700, color: due > 0 ? '#dc2626' : 'var(--text)' }}>
+              DUE: ₹{due}
+            </span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={resetVisitForm}
+                style={{
+                  background: 'transparent', color: 'var(--text)', border: '1.5px solid var(--border)',
+                  borderRadius: '7px', padding: '6px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveVisit(true)}
+                style={{
+                  background: 'var(--primary)', color: '#fff', border: 'none',
+                  borderRadius: '7px', padding: '6px 18px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                }}
+              >
+                <i className="fa-solid fa-floppy-disk" /> Save &amp; Print
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── VISIT HISTORY ─────────────────────────────────────────────────── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+              Visit History ({historyVisits.length})
+            </h3>
+            {/* date filter */}
+            <input
+              type="date"
+              className="cms-input"
+              style={{ height: '30px', fontSize: '12px', width: '130px' }}
+              value={historyDateFilter}
+              onChange={e => setHistoryDateFilter(e.target.value)}
+              title="Filter by date"
+            />
+            {historyDateFilter && (
+              <button
+                type="button"
+                onClick={() => setHistoryDateFilter('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '12px', fontWeight: 700 }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={showDueOnly} onChange={() => setShowDueOnly(!showDueOnly)} />
+            Show Due Only
+          </label>
+        </div>
+
         {historyVisits.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <i className="fa-solid fa-notes-medical" style={{ fontSize: '32px', marginBottom: '10px', display: 'block', opacity: 0.4 }}></i>
-            No consultation records match the active filter.
+          <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <i className="fa-solid fa-notes-medical" style={{ fontSize: '30px', marginBottom: '10px', display: 'block', opacity: 0.4 }} />
+            No consultation records{showDueOnly ? ' with due balance' : ''}.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {historyVisits.map((v, idx) => (
               <div
                 key={`${v.caseId}-${idx}`}
-                className="cms-history-card"
                 style={{
-                  border: '1.5px solid var(--border)',
-                  borderRadius: '10px',
-                  padding: '18px',
-                  background: 'var(--surface)',
+                  border: '1.5px solid var(--border)', borderRadius: '10px',
+                  padding: '14px 16px', background: 'var(--surface)',
                 }}
               >
-                {/* History Card Top Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                {/* Top row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="cms-pill font-mono" style={{ fontSize: '13px', fontWeight: 800, background: 'rgba(9,92,84,0.1)', color: 'var(--primary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span className="font-mono" style={{
+                        background: 'rgba(9,92,84,0.1)', color: 'var(--primary)',
+                        borderRadius: '5px', padding: '2px 8px', fontSize: '12px', fontWeight: 800,
+                      }}>
                         Case #{v.caseId}
                       </span>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
                         {fmtDate(v.date)} · {v.time || 'OPD'}
                       </span>
-                      <span className="cms-pill" style={{ fontSize: '11px' }}>
+                      <span style={{
+                        background: 'var(--surface-alt)', borderRadius: '5px',
+                        padding: '2px 7px', fontSize: '11.5px', color: 'var(--text-muted)',
+                      }}>
                         Visit #{v.visitNum || idx + 1}
                       </span>
                     </div>
-
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       Referred: {v.reference || 'Self'}
-                      {(v.bp || v.sugar || v.pulse || v.weight) && (
+                      {(v.bp || v.sugar || v.otherVitals) && (
                         <span style={{ marginLeft: '10px', color: 'var(--text)' }}>
-                          Vitals: {v.bp ? `BP: ${v.bp} ` : ''}
+                          {v.bp ? `BP: ${v.bp} ` : ''}
                           {v.sugar ? `Sugar: ${v.sugar} ` : ''}
-                          {v.pulse ? `Pulse: ${v.pulse} ` : ''}
-                          {v.weight ? `Wt: ${v.weight}kg` : ''}
+                          {v.otherVitals ? `Other: ${v.otherVitals}` : ''}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Financials & Actions */}
+                  {/* Actions */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ textAlign: 'right', marginRight: '6px' }}>
+                    <div style={{ textAlign: 'right', marginRight: '4px' }}>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                         Charge: <strong>{fmtMoney(v.charge)}</strong> · Paid: <strong style={{ color: '#059669' }}>{fmtMoney(v.received)}</strong>
                       </div>
                       {Number(v.due) > 0 ? (
-                        <span className="cms-pill cms-badge-due font-mono" style={{ fontSize: '11px' }}>Due: {fmtMoney(v.due)}</span>
+                        <span style={{ background: '#fee2e2', color: '#dc2626', borderRadius: '5px', padding: '1px 7px', fontSize: '11px', fontWeight: 700 }}>
+                          Due: {fmtMoney(v.due)}
+                        </span>
                       ) : (
-                        <span className="cms-pill cms-badge-paid font-mono" style={{ fontSize: '11px' }}>Paid</span>
+                        <span style={{ background: '#d1fae5', color: '#047857', borderRadius: '5px', padding: '1px 7px', fontSize: '11px', fontWeight: 700 }}>
+                          Paid
+                        </span>
                       )}
                     </div>
-
                     <button
                       type="button"
-                      className="cms-btn cms-btn-primary"
                       onClick={() => setPrintingVisit(v)}
-                      style={{ padding: '6px 10px', fontSize: '11.5px' }}
-                      title="Print Prescription Letterhead"
+                      style={{
+                        background: 'var(--primary)', color: '#fff', border: 'none',
+                        borderRadius: '6px', padding: '5px 10px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+                      }}
                     >
-                      <i className="fa-solid fa-print"></i> Print Rx
+                      <i className="fa-solid fa-print" /> Print Rx
                     </button>
                     <button
                       type="button"
-                      className="cms-btn cms-btn-ghost"
                       onClick={() => handleEditVisit(v)}
-                      style={{ padding: '6px 10px', fontSize: '11.5px' }}
-                      title="Edit this Visit"
+                      style={{
+                        background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)',
+                        borderRadius: '6px', padding: '5px 9px', fontSize: '11.5px', cursor: 'pointer',
+                      }}
                     >
-                      <i className="fa-solid fa-pen-to-square"></i>
+                      <i className="fa-solid fa-pen-to-square" />
                     </button>
                     <button
                       type="button"
-                      className="cms-btn cms-btn-ghost text-danger"
                       onClick={() => handleDeleteVisit(v.caseId)}
-                      style={{ padding: '6px 10px', fontSize: '11.5px' }}
-                      title="Delete Visit Entry"
+                      style={{
+                        background: 'transparent', color: '#dc2626', border: '1px solid #fca5a5',
+                        borderRadius: '6px', padding: '5px 9px', fontSize: '11.5px', cursor: 'pointer',
+                      }}
                     >
-                      <i className="fa-solid fa-trash"></i>
+                      <i className="fa-solid fa-trash" />
                     </button>
                   </div>
                 </div>
 
-                {/* Complaints & Diagnosis */}
-                <div style={{ marginBottom: '10px', fontSize: '13px' }}>
+                {/* Complaints / Diagnosis */}
+                <div style={{ fontSize: '13px', marginBottom: '8px' }}>
                   {v.complaint && (
-                    <div style={{ marginBottom: '4px' }}>
+                    <div style={{ marginBottom: '3px' }}>
                       <strong style={{ color: 'var(--text-muted)' }}>Complaints: </strong>
-                      <span style={{ color: 'var(--text)' }}>{v.complaint}</span>
+                      <span>{v.complaint}</span>
                     </div>
                   )}
                   {v.diagnosis && (
-                    <div style={{ marginBottom: '4px' }}>
+                    <div style={{ marginBottom: '3px' }}>
                       <strong style={{ color: 'var(--primary)' }}>Diagnosis: </strong>
-                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>{v.diagnosis}</span>
+                      <span style={{ fontWeight: 700 }}>{v.diagnosis}</span>
                     </div>
                   )}
                   {v.investigation && (
                     <div>
                       <strong style={{ color: 'var(--text-muted)' }}>Investigations: </strong>
-                      <span style={{ color: 'var(--text)' }}>{v.investigation}</span>
+                      <span>{v.investigation}</span>
+                    </div>
+                  )}
+                  {v.dietary && (
+                    <div style={{ marginTop: '3px' }}>
+                      <strong style={{ color: '#92400e' }}>Dietary: </strong>
+                      <span style={{ color: '#92400e' }}>{v.dietary}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Prescription Items Capsules */}
+                {/* Prescription pills */}
                 {v.prescription && v.prescription.length > 0 && (
-                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  <div style={{ paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '5px' }}>
                       Prescription ({v.prescription.length} medicines)
                     </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {v.prescription.map((rx, rIdx) => (
-                        <div
-                          key={rIdx}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            background: 'var(--surface-alt, #f8fafc)',
-                            border: '1px solid var(--border)',
-                            fontSize: '11.5px',
-                            color: 'var(--text)',
-                          }}
-                        >
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      {v.prescription.map((rx, ri) => (
+                        <div key={ri} style={{
+                          padding: '3px 8px', borderRadius: '5px',
+                          background: 'var(--surface-alt)', border: '1px solid var(--border)',
+                          fontSize: '11.5px', color: 'var(--text)',
+                        }}>
                           <strong>{rx.name}</strong> ({rx.qty}) · <span style={{ color: 'var(--primary)' }}>{rx.mor}-{rx.noon}-{rx.eve}-{rx.ngt} {rx.timing}</span>
                         </div>
                       ))}

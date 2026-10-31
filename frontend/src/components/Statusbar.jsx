@@ -7,16 +7,16 @@ export default function Statusbar() {
   const [clock, setClock] = useState(nowTime());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setClock(nowTime());
-    }, 1000);
+    const timer = setInterval(() => { setClock(nowTime()); }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const name = activeClinic?.name || 'Dhyey Clinic & Nursing Home';
 
   return (
     <footer className="cms-statusbar">
       <span id="statusbar-clinic-title">
-        <b>{activeClinic?.name || 'Dhyey Clinic'} System</b>
+        <b>{name} System</b>
       </span>
       <span>F1 Family Reg</span>
       <span>F2 Add Member</span>

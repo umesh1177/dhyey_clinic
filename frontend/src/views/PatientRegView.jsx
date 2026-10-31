@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getLocalDB,
-  saveLocalDB,
-  apiFetch,
-  showToast,
-  getSharedMasterCollection,
-  pad,
+  getLocalDB, saveLocalDB, apiFetch,
+  showToast, getSharedMasterCollection, pad,
 } from '../services/api';
+
+const BLOOD_GROUPS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function PatientRegView({ initialFamilyId, initialPatientId, onNavigate, onSelectPatient }) {
   const { session } = useAuth();
@@ -17,21 +15,20 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
   const [selectedFamilyId, setSelectedFamilyId] = useState(initialFamilyId || '');
   const [editingPatientId, setEditingPatientId] = useState(initialPatientId || null);
 
-  // Form State
   const [patientId, setPatientId] = useState('');
   const [name, setName] = useState('');
-  const [relation, setRelation] = useState('Son');
+  const [relation, setRelation] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Male');
   const [bloodGroup, setBloodGroup] = useState('');
-  const [allergy, setAllergy] = useState('None');
+  const [allergy, setAllergy] = useState('');
   const [phone, setPhone] = useState('');
   const [society, setSociety] = useState('');
   const [area, setArea] = useState('');
 
-  // Masters
   const [allergiesMaster, setAllergiesMaster] = useState([]);
   const [relationsMaster, setRelationsMaster] = useState([]);
+  const nameRef = useRef();
 
   useEffect(() => {
     loadData();
@@ -42,7 +39,6 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
   useEffect(() => {
     if (selectedFamilyId) {
       computeNextPatientId(selectedFamilyId);
-      // Auto fill address from family head
       const db = getLocalDB(clinicId);
       const fam = db.families[selectedFamilyId];
       if (fam && !editingPatientId) {
@@ -57,9 +53,7 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
     if (initialPatientId && initialFamilyId) {
       const db = getLocalDB(clinicId);
       const fam = db.families[initialFamilyId];
-      if (fam && fam.patients?.[initialPatientId]) {
-        loadPatientForEdit(fam.patients[initialPatientId]);
-      }
+      if (fam?.patients?.[initialPatientId]) loadPatientForEdit(fam.patients[initialPatientId]);
     }
   }, [initialPatientId, initialFamilyId]);
 
@@ -67,9 +61,8 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
     const db = getLocalDB(clinicId);
     const list = Object.values(db.families || {});
     setFamilies(list);
-    if (!selectedFamilyId && list.length > 0) {
-      setSelectedFamilyId(list[0].id || list[0].famId);
-    }
+    const famId = initialFamilyId || (list.length > 0 ? (list[0].id || list[0].famId) : '');
+    if (famId) setSelectedFamilyId(famId);
   };
 
   const computeNextPatientId = (fId) => {
@@ -77,7 +70,6 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
     const db = getLocalDB(clinicId);
     const fam = db.families[fId];
     if (!fam) return;
-
     const seq = pad(fam.sequence || 1, 4);
     const pCount = Object.keys(fam.patients || {}).length + 1;
     setPatientId(`${seq}${pad(pCount, 4)}`);
@@ -86,352 +78,236 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
   const loadPatientForEdit = (p) => {
     setEditingPatientId(p.id || p.patId);
     setPatientId(p.id || p.patId);
-    setName(p.name);
-    setRelation(p.relation || 'Son');
-    setAge(p.age || '');
-    setGender(p.gender || 'Male');
-    setBloodGroup(p.bloodGroup || '');
-    setAllergy(p.allergy || 'None');
-    setPhone(p.phone || '');
-    setSociety(p.society || '');
-    setArea(p.area || '');
+    setName(p.name); setRelation(p.relation || '');
+    setAge(p.age || ''); setGender(p.gender || 'Male');
+    setBloodGroup(p.bloodGroup || ''); setAllergy(p.allergy || '');
+    setPhone(p.phone || ''); setSociety(p.society || ''); setArea(p.area || '');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedFamilyId) {
-      showToast('Please select a family first.', 'error');
-      return;
-    }
-    if (!name.trim()) {
-      showToast('Please enter the patient name.', 'error');
-      return;
-    }
+    if (!selectedFamilyId) { showToast('Please select a family.', 'error'); return; }
+    if (!name.trim()) { showToast('Patient name is required.', 'error'); return; }
 
     const db = getLocalDB(clinicId);
     const fam = db.families[selectedFamilyId];
-    if (!fam) {
-      showToast('Selected family not found.', 'error');
-      return;
-    }
+    if (!fam) { showToast('Family not found.', 'error'); return; }
     if (!fam.patients) fam.patients = {};
 
     const pId = editingPatientId || patientId;
     const existingVisits = fam.patients[pId]?.visits || [];
 
     const newPat = {
-      id: pId,
-      patId: pId,
-      familyId: selectedFamilyId,
-      name: name.trim().toUpperCase(),
-      relation,
-      age: age.trim(),
-      gender,
-      bloodGroup: bloodGroup.trim(),
-      allergy: allergy.trim(),
-      phone: phone.trim(),
-      society: society.trim(),
-      area: area.trim(),
-      visits: existingVisits,
+      id: pId, patId: pId, familyId: selectedFamilyId,
+      name: name.trim().toUpperCase(), relation,
+      age: age.trim(), gender, bloodGroup: bloodGroup.trim(),
+      allergy: allergy.trim() || 'None', phone: phone.trim(),
+      society: society.trim(), area: area.trim(), visits: existingVisits,
     };
 
     fam.patients[pId] = newPat;
     saveLocalDB(clinicId, db);
+    showToast(editingPatientId ? `Patient updated.` : `Member ${newPat.name} added!`);
+    apiFetch('/patients', { method: editingPatientId ? 'PUT' : 'POST', body: newPat }).catch(() => {});
 
-    showToast(
-      editingPatientId
-        ? `Patient ${newPat.name} updated.`
-        : `Member ${newPat.name} added to family!`,
-      'success'
-    );
-
-    // Sync to backend
-    apiFetch('/patients', {
-      method: editingPatientId ? 'PUT' : 'POST',
-      body: newPat,
-    }).catch(() => {});
-
-    // Option to open consultation immediately
-    const startCase = window.confirm(
-      `Patient record saved successfully!\n\nDo you want to start a Clinical Consultation / Case Entry for ${newPat.name} right now?`
-    );
-    if (startCase) {
-      onSelectPatient(selectedFamilyId, pId);
-    } else {
-      resetForm();
-    }
+    // Auto-open case record
+    onSelectPatient(selectedFamilyId, pId);
   };
 
   const resetForm = () => {
-    setEditingPatientId(null);
-    setName('');
-    setRelation('Son');
-    setAge('');
-    setGender('Male');
-    setBloodGroup('');
-    setAllergy('None');
+    setEditingPatientId(null); setName(''); setRelation(''); setAge('');
+    setGender('Male'); setBloodGroup(''); setAllergy('');
     computeNextPatientId(selectedFamilyId);
+    setTimeout(() => nameRef.current?.focus(), 100);
   };
 
   const currentFamily = families.find((f) => (f.id || f.famId) === selectedFamilyId);
-  const familyMembers = currentFamily ? Object.values(currentFamily.patients || {}) : [];
 
   return (
-    <div className="cms-page-container">
-      {/* Title */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 4px', color: 'var(--text)' }}>
-            <i className="fa-solid fa-user-plus" style={{ color: '#0b5ed7', marginRight: '8px' }}></i>
-            Add Family Member / Patient Registration (F2)
-          </h2>
-          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
-            Register new patients under their respective family heads
-          </p>
+    <div className="cms-page-container" style={{ padding: '16px 20px' }}>
+      {/* Title bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+          Add Member to Family
+          {currentFamily && <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}> · {currentFamily.headName}</span>}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)' }}>
+          <i className="fa-solid fa-user-plus" style={{ color: 'var(--primary)' }}></i>
+          Member Registration
         </div>
       </div>
 
-      {/* Main Registration Card */}
-      <div className="cms-card" style={{ marginBottom: '24px' }}>
-        <form onSubmit={handleSubmit}>
-          {/* Family & Patient ID Bar */}
-          <div
-            style={{
-              padding: '12px 16px',
-              background: 'var(--surface-alt, #f8fafc)',
-              borderRadius: '8px',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-              marginBottom: '20px',
-            }}
-          >
-            <div style={{ flex: '1 1 280px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                Select Family
-              </label>
-              <select
-                className="cms-input"
-                value={selectedFamilyId}
-                onChange={(e) => setSelectedFamilyId(e.target.value)}
-                style={{ fontWeight: 600 }}
-              >
-                {families.map((f) => (
-                  <option key={f.id || f.famId} value={f.id || f.famId}>
-                    {f.headName} ({f.id || f.famId}) · {f.area || 'General'}
-                  </option>
-                ))}
-              </select>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+        {/* Selected Family Head Card */}
+        {currentFamily ? (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(9,92,84,0.06) 0%, rgba(20,107,92,0.04) 100%)',
+            border: '1.5px solid rgba(9,92,84,0.2)', borderRadius: '10px',
+            padding: '14px 16px', marginBottom: '20px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary), #146B5C)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: '16px',
+              }}>
+                <i className="fa-solid fa-people-roof"></i>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>Selected Family Head</div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>{currentFamily.headName}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '2px' }}>
+                  {currentFamily.society && <span>{currentFamily.society}</span>}
+                  {currentFamily.area && <span>· {currentFamily.area}</span>}
+                  {currentFamily.phone && <span>· <i className="fa-solid fa-phone" style={{ fontSize: '10px' }}></i> {currentFamily.phone}</span>}
+                </div>
+              </div>
             </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                Patient ID
-              </label>
-              <span className="cms-pill font-mono" style={{ fontSize: '14px', fontWeight: 800, background: '#0b5ed7', color: '#fff' }}>
-                {patientId}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="font-mono" style={{ background: 'var(--primary)', color: '#fff', borderRadius: '6px', padding: '4px 12px', fontSize: '12px', fontWeight: 700 }}>
+                FAM {currentFamily.id || currentFamily.famId}
               </span>
+              <button
+                type="button"
+                className="cms-btn cms-btn-ghost"
+                onClick={() => { setSelectedFamilyId(''); setName(''); }}
+                style={{ fontSize: '12px', padding: '4px 12px', border: '1px solid var(--border)' }}
+              >
+                <i className="fa-solid fa-rotate"></i> Change Family
+              </button>
             </div>
           </div>
+        ) : (
+          /* No family selected — show family picker */
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>
+              Select Family <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <select
+              className="cms-input"
+              value={selectedFamilyId}
+              onChange={(e) => setSelectedFamilyId(e.target.value)}
+            >
+              <option value="">-- Select a Family --</option>
+              {families.map((f) => (
+                <option key={f.id || f.famId} value={f.id || f.famId}>
+                  {f.headName} ({f.id || f.famId}) · {f.area || ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-          {/* Form Fields Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+        <form onSubmit={handleSubmit}>
+          {/* Row 1: Member Name + Relation */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
             <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Patient Full Name <span style={{ color: '#dc2626' }}>*</span>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
+                Member Full Name <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
+                ref={nameRef}
                 type="text"
                 className="cms-input"
-                placeholder="Full name"
+                placeholder="(SURNAME NAME FATHER/HUSBAND'S NAME)"
                 value={name}
                 onChange={(e) => setName(e.target.value.toUpperCase())}
                 required
                 autoFocus
               />
             </div>
-
             <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Relationship to Head
-              </label>
-              <select className="cms-input" value={relation} onChange={(e) => setRelation(e.target.value)}>
-                {relationsMaster.map((r) => (
-                  <option key={r.id} value={r.name}>{r.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Age
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
+                Relation to Head <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
                 type="text"
                 className="cms-input"
-                placeholder="e.g. 35 Y, 6 M"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. Wife, Son, Mother"
+                value={relation}
+                onChange={(e) => setRelation(e.target.value)}
+                list="relation-list"
               />
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Gender
-              </label>
-              <select className="cms-input" value={gender} onChange={(e) => setGender(e.target.value)}>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Blood Group
-              </label>
-              <select className="cms-input" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)}>
-                <option value="">Unknown / Not Tested</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Known Allergies (Penicillin, Sulfa, etc.)
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                placeholder="e.g. None, Penicillin"
-                value={allergy}
-                onChange={(e) => setAllergy(e.target.value)}
-                list="allergy-options"
-              />
-              <datalist id="allergy-options">
-                {allergiesMaster.map((al) => (
-                  <option key={al.id} value={al.name} />
-                ))}
+              <datalist id="relation-list">
+                {(relationsMaster.length > 0 ? relationsMaster : [
+                  { id: 1, name: 'Wife' }, { id: 2, name: 'Son' }, { id: 3, name: 'Daughter' },
+                  { id: 4, name: 'Mother' }, { id: 5, name: 'Father' }, { id: 6, name: 'Brother' },
+                  { id: 7, name: 'Sister' }, { id: 8, name: 'Other' },
+                ]).map((r) => <option key={r.id} value={r.name} />)}
               </datalist>
-            </div>
-
-            <div>
-              <label className="cms-label" style={{ display: 'block', marginBottom: '6px', fontSize: '12.5px', fontWeight: 700 }}>
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                className="cms-input"
-                placeholder="Contact number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          {/* Row 2: Age, Blood Group, Known Allergies */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Age</label>
+              <input type="text" className="cms-input" placeholder="e.g. 35, 6M" value={age} onChange={(e) => setAge(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Blood Group</label>
+              <select className="cms-input" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)}>
+                {BLOOD_GROUPS.map((bg) => <option key={bg} value={bg}>{bg || '-- Select --'}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>Known Allergies</label>
+              <input
+                type="text" className="cms-input" placeholder="e.g. Penicillin, None"
+                value={allergy} onChange={(e) => setAllergy(e.target.value)}
+                list="allergy-list-2"
+              />
+              <datalist id="allergy-list-2">
+                {(allergiesMaster.length > 0 ? allergiesMaster : [
+                  { id: 1, name: 'None' }, { id: 2, name: 'Penicillin' },
+                  { id: 3, name: 'Sulfa' }, { id: 4, name: 'Dust / Pollen' }, { id: 5, name: 'Aspirin' },
+                ]).map((a) => <option key={a.id} value={a.name} />)}
+              </datalist>
+            </div>
+          </div>
+
+          {/* Row 3: Society, Area (auto-filled) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
+                Society / Flat <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>(Auto-filled, editable)</span>
+              </label>
+              <input type="text" className="cms-input" value={society} onChange={(e) => setSociety(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
+                Area / Location <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>(Auto-filled, editable)</span>
+              </label>
+              <input type="text" className="cms-input" value={area} onChange={(e) => setArea(e.target.value.toUpperCase())} />
+            </div>
+          </div>
+
+          {/* Row 4: Contact Phone */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '5px', textTransform: 'uppercase' }}>
+              Contact Phone <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span>
+            </label>
+            <input
+              type="tel" className="cms-input" placeholder="Mobile number"
+              value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={12}
+              style={{ maxWidth: '280px' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
             {editingPatientId && (
-              <button type="button" className="cms-btn cms-btn-outline" onClick={resetForm}>
-                Cancel Edit
-              </button>
+              <button type="button" className="cms-btn cms-btn-outline" onClick={resetForm}>Cancel</button>
             )}
-            <button type="submit" className="cms-btn cms-btn-primary">
-              <i className="fa-solid fa-floppy-disk"></i> {editingPatientId ? 'Update Member' : 'Save Member (F2)'}
+            <button type="submit" className="cms-btn cms-btn-primary" style={{ flex: 1, height: '44px', fontSize: '14px', fontWeight: 700 }}>
+              <i className="fa-solid fa-user-plus"></i>{' '}
+              {editingPatientId ? 'Update Member' : 'Save Member & Open Patient Record'}
+              {' '}<kbd style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px' }}>Enter</kbd>
             </button>
           </div>
         </form>
       </div>
-
-      {/* Current Family Members Table */}
-      {currentFamily && (
-        <div className="cms-card">
-          <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 12px', color: 'var(--text)' }}>
-            Enrolled Members of Family: <span style={{ color: 'var(--primary)' }}>{currentFamily.headName}</span> ({familyMembers.length})
-          </h3>
-
-          <div className="cms-table-responsive">
-            <table className="cms-table">
-              <thead>
-                <tr>
-                  <th>Patient ID</th>
-                  <th>Name</th>
-                  <th>Relation</th>
-                  <th>Age / Gender</th>
-                  <th>Blood Group</th>
-                  <th>Allergies</th>
-                  <th>Visits</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {familyMembers.map((p) => (
-                  <tr key={p.id || p.patId}>
-                    <td>
-                      <span className="cms-pill font-mono" style={{ fontSize: '11px', fontWeight: 700 }}>
-                        {p.id || p.patId}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
-                    </td>
-                    <td>
-                      <span className="cms-pill" style={{ fontSize: '11px' }}>
-                        {p.relation || 'Member'}
-                      </span>
-                    </td>
-                    <td>{p.age ? `${p.age} Y` : '-'} · {p.gender || '-'}</td>
-                    <td>{p.bloodGroup || '-'}</td>
-                    <td>
-                      {p.allergy && p.allergy.toLowerCase() !== 'none' ? (
-                        <span className="cms-pill" style={{ background: '#fee2e2', color: '#dc2626', fontWeight: 700 }}>
-                          <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '4px' }}></i>
-                          {p.allergy}
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>None</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className="cms-pill">
-                        {(p.visits || []).length} visits
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="cms-btn cms-btn-ghost"
-                          onClick={() => onSelectPatient(selectedFamilyId, p.id || p.patId)}
-                          style={{ padding: '4px 8px', fontSize: '11.5px' }}
-                        >
-                          <i className="fa-solid fa-notes-medical text-primary"></i> Case
-                        </button>
-                        <button
-                          type="button"
-                          className="cms-btn cms-btn-ghost"
-                          onClick={() => loadPatientForEdit(p)}
-                          style={{ padding: '4px 8px', fontSize: '11.5px' }}
-                        >
-                          <i className="fa-solid fa-pen-to-square"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

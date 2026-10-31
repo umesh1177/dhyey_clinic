@@ -2,36 +2,65 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, getLocalDB, fmtMoney, fmtDate, todayISO } from '../services/api';
 
+const DATE_OPTS = [
+  { key: 'today', label: 'Today' },
+  { key: 'yesterday', label: 'Yesterday' },
+  { key: 'week', label: 'Last 7 Days' },
+  { key: 'month', label: 'This Month' },
+];
+
 export default function DashboardView({ onNavigate }) {
   const { session, activeClinic } = useAuth();
-  const [stats, setStats] = useState({
-    visitsToday: 0,
-    dateCollection: 0,
-    totalDue: 0,
-    totalPatients: 0,
-    totalFamilies: 0,
-  });
-  const [recentVisits, setRecentVisits] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const clinicId = session?.profile?.activeClinicId || 'demo';
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [clinicId]);
+  const [dateRange, setDateRange] = useState('today');
+  const [activeTab, setActiveTab] = useState('opd');
+  const [tableSearch, setTableSearch] = useState('');
+
+  const [stats, setStats] = useState({
+    visitsToday: 0, newVisits: 0, revisits: 0,
+    dateCollection: 0, billed: 0, due: 0,
+    totalPatients: 0, totalFamilies: 0,
+    totalDue: 0, defaulters: 0,
+  });
+  const [allVisits, setAllVisits] = useState([]);
+  const [allPatients, setAllPatients] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadDashboardData(); }, [clinicId, dateRange]);
+
+  const getDateRange = () => {
+    const today = todayISO();
+    if (dateRange === 'today') return { from: today, to: today };
+    if (dateRange === 'yesterday') {
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      const s = y.toISOString().slice(0, 10);
+      return { from: s, to: s };
+    }
+    if (dateRange === 'week') {
+      const y = new Date(); y.setDate(y.getDate() - 6);
+      return { from: y.toISOString().slice(0, 10), to: today };
+    }
+    // month
+    const m = new Date(); m.setDate(1);
+    return { from: m.toISOString().slice(0, 10), to: today };
+  };
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
       const db = getLocalDB(clinicId);
-      const allPats = [];
-      const allVisits = [];
+      const { from, to } = getDateRange();
+      const pats = [];
+      const visits = [];
+      const fups = [];
 
       Object.values(db.families || {}).forEach((f) => {
         Object.values(f.patients || {}).forEach((p) => {
-          allPats.push({ ...p, famHead: f.headName, famId: f.id });
+          pats.push({ ...p, famHead: f.headName, famId: f.id, famDue: f.due || 0 });
           (p.visits || []).forEach((v) => {
-            allVisits.push({
+            visits.push({
               ...v,
               famHead: f.headName,
               familyId: f.id,
@@ -41,289 +70,409 @@ export default function DashboardView({ onNavigate }) {
               age: p.age,
             });
           });
+          (p.followUps || []).forEach((fu) => {
+            fups.push({ ...fu, patName: p.name, familyId: f.id, patientId: p.id });
+          });
         });
       });
 
+      const inRange = visits.filter((v) => v.date >= from && v.date <= to);
       const today = todayISO();
-      const todayVisits = allVisits.filter((v) => v.date === today);
-      const collectionToday = todayVisits.reduce((acc, v) => acc + (Number(v.received) || 0), 0);
-      const totalDueAll = allVisits.reduce((acc, v) => acc + (Number(v.due) || 0), 0);
+      const todayVisits = visits.filter((v) => v.date === today);
+
+      const collectionInRange = inRange.reduce((a, v) => a + (Number(v.received) || 0), 0);
+      const billedInRange = inRange.reduce((a, v) => a + (Number(v.charge) || 0), 0);
+      const dueInRange = inRange.reduce((a, v) => a + (Number(v.due) || 0), 0);
+      const totalDueAll = visits.reduce((a, v) => a + (Number(v.due) || 0), 0);
+      const defaulters = pats.filter((p) => (p.due || 0) > 0).length;
 
       setStats({
-        visitsToday: todayVisits.length,
-        dateCollection: collectionToday,
-        totalDue: totalDueAll,
-        totalPatients: allPats.length,
+        visitsToday: inRange.length,
+        newVisits: inRange.filter((v) => v.visitNum === 1).length,
+        revisits: inRange.filter((v) => (v.visitNum || 1) > 1).length,
+        dateCollection: collectionInRange,
+        billed: billedInRange,
+        due: dueInRange,
+        totalPatients: pats.length,
         totalFamilies: Object.keys(db.families || {}).length,
+        totalDue: totalDueAll,
+        defaulters,
       });
 
-      // Sort visits descending
-      allVisits.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
-      setRecentVisits(allVisits.slice(0, 10));
-
-      // Attempt async backend fetch for aggregated stats
-      apiFetch('/reports/stats').then((res) => {
-        if (res && res.success && res.data) {
-          const d = res.data;
-          setStats((prev) => ({
-            ...prev,
-            visitsToday: d.visitsCount ?? prev.visitsToday,
-            dateCollection: d.dateCollection ?? prev.dateCollection,
-            totalDue: d.totalDue ?? prev.totalDue,
-            totalPatients: d.totalPatients ?? prev.totalPatients,
-            totalFamilies: d.totalFamilies ?? prev.totalFamilies,
-          }));
-        }
-      }).catch(() => {});
+      inRange.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+      setAllVisits(inRange);
+      setAllPatients(pats);
+      setFollowUps(fups.filter((f) => f.date >= today));
     } catch (e) {
-      console.warn('Dashboard load error:', e);
+      console.warn(e);
     } finally {
       setLoading(false);
     }
   };
 
+  const todayLabel = () => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+  };
+
+  const filtered = (list) => {
+    const q = tableSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((v) =>
+      (v.patName || '').toLowerCase().includes(q) ||
+      (v.caseId || '').toLowerCase().includes(q) ||
+      (v.diagnosis || '').toLowerCase().includes(q) ||
+      (v.complaint || '').toLowerCase().includes(q)
+    );
+  };
+
+  const tabCounts = {
+    opd: allVisits.length,
+    followups: followUps.length,
+    invoices: allVisits.filter((v) => v.charge > 0).length,
+    patients: allPatients.length,
+    dues: allPatients.filter((p) => (p.due || 0) > 0).length,
+  };
+
+  const TABS = [
+    { key: 'opd', label: 'OPD Consultations', icon: 'fa-stethoscope' },
+    { key: 'followups', label: 'Follow-ups', icon: 'fa-bell' },
+    { key: 'invoices', label: 'Invoices & Receipts', icon: 'fa-file-invoice' },
+    { key: 'patients', label: 'Patient Directory', icon: 'fa-users' },
+    { key: 'dues', label: 'Dues Recovery', icon: 'fa-triangle-exclamation' },
+  ];
+
   return (
-    <div className="cms-page-container">
-      {/* Welcome Banner */}
-      <div
-        className="cms-card"
-        style={{
-          background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-          color: '#ffffff',
-          padding: '24px',
-          marginBottom: '20px',
-          borderRadius: '12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 6px' }}>
-            Good day, Dr. {session?.profile?.name || 'Doctor'}
-          </h2>
-          <p style={{ margin: 0, opacity: 0.9, fontSize: '13.5px' }}>
-            Active at <strong>{activeClinic?.name || 'Clinic'}</strong> · Today's OPD queue is active.
-          </p>
+    <div className="cms-page-container" style={{ padding: '0' }}>
+      {/* Header */}
+      <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <i className="fa-solid fa-chart-line" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
+          <h2 style={{ fontSize: '17px', fontWeight: 800, margin: 0 }}>Clinical Dashboard</h2>
+          {/* Date filter pills */}
+          <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+            {DATE_OPTS.map((d) => (
+              <button
+                key={d.key}
+                type="button"
+                onClick={() => setDateRange(d.key)}
+                style={{
+                  padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                  background: dateRange === d.key ? 'var(--primary)' : 'var(--surface-alt)',
+                  color: dateRange === d.key ? '#fff' : 'var(--text-muted)',
+                  border: 'none', cursor: 'pointer',
+                }}
+              >{d.label}</button>
+            ))}
+          </div>
+          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)', fontWeight: 600 }}>{todayLabel()}</span>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            type="button"
-            className="cms-btn"
-            onClick={() => onNavigate('case')}
-            style={{ background: '#ffffff', color: 'var(--primary)', fontWeight: 700 }}
-          >
-            <i className="fa-solid fa-notes-medical"></i> Quick Consultation (F3)
+        {/* Quick action buttons */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="cms-btn cms-btn-primary" onClick={() => onNavigate('case')} style={{ fontSize: '13px', padding: '7px 14px' }}>
+            <i className="fa-solid fa-plus"></i> New Consultation <span className="cms-kbd" style={{ marginLeft: '4px' }}>F3</span>
+          </button>
+          <button className="cms-btn cms-btn-outline" onClick={() => onNavigate('patient')} style={{ fontSize: '13px', padding: '7px 14px' }}>
+            <i className="fa-solid fa-user-plus"></i> Add Patient <span className="cms-kbd" style={{ marginLeft: '4px' }}>F2</span>
+          </button>
+          <button className="cms-btn cms-btn-outline" onClick={() => onNavigate('family')} style={{ fontSize: '13px', padding: '7px 14px' }}>
+            <i className="fa-solid fa-people-roof"></i> Family Head <span className="cms-kbd" style={{ marginLeft: '4px' }}>F1</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px',
-        }}
-      >
-        <div className="cms-card cms-kpi-card">
-          <div className="cms-kpi-header">
-            <span className="cms-kpi-title">Today's OPD Visits</span>
-            <div className="cms-kpi-icon" style={{ background: 'rgba(9, 92, 84, 0.1)', color: 'var(--primary)' }}>
-              <i className="fa-solid fa-user-clock"></i>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '16px 20px' }}>
+        {/* Visits */}
+        <div className="cms-card" style={{ padding: '16px', borderLeft: '4px solid var(--primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '4px' }}>Today</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <i className="fa-solid fa-user-clock" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
+                <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{stats.visitsToday}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Visits</span>
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>OPD Consultations</div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {stats.newVisits} New • {stats.revisits} Re-visits
+              </div>
             </div>
           </div>
-          <div className="cms-kpi-value font-mono">{stats.visitsToday}</div>
-          <div className="cms-kpi-sub">Registered patients today</div>
         </div>
 
-        <div className="cms-card cms-kpi-card">
-          <div className="cms-kpi-header">
-            <span className="cms-kpi-title">Today's Collection</span>
-            <div className="cms-kpi-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-              <i className="fa-solid fa-indian-rupee-sign"></i>
-            </div>
-          </div>
-          <div className="cms-kpi-value font-mono" style={{ color: '#059669' }}>
-            {fmtMoney(stats.dateCollection)}
-          </div>
-          <div className="cms-kpi-sub">Total received fees</div>
-        </div>
-
-        <div className="cms-card cms-kpi-card">
-          <div className="cms-kpi-header">
-            <span className="cms-kpi-title">Outstanding Dues</span>
-            <div className="cms-kpi-icon" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-              <i className="fa-solid fa-receipt"></i>
-            </div>
-          </div>
-          <div className="cms-kpi-value font-mono" style={{ color: stats.totalDue > 0 ? '#dc2626' : 'var(--text)' }}>
-            {fmtMoney(stats.totalDue)}
-          </div>
-          <div className="cms-kpi-sub">Pending patient balances</div>
-        </div>
-
-        <div className="cms-card cms-kpi-card">
-          <div className="cms-kpi-header">
-            <span className="cms-kpi-title">Total Patients</span>
-            <div className="cms-kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-              <i className="fa-solid fa-users"></i>
-            </div>
-          </div>
-          <div className="cms-kpi-value font-mono">{stats.totalPatients}</div>
-          <div className="cms-kpi-sub">Across {stats.totalFamilies} families</div>
-        </div>
-      </div>
-
-      {/* Quick Action Tiles */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px' }}>
-          Quick Operational Actions
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
-          <button
-            type="button"
-            className="cms-card cms-action-tile"
-            onClick={() => onNavigate('family')}
-            style={{ cursor: 'pointer', textAlign: 'left', padding: '16px' }}
-          >
-            <i className="fa-solid fa-people-roof" style={{ fontSize: '22px', color: 'var(--primary)', marginBottom: '8px' }}></i>
-            <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>New Family (F1)</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Register family head</div>
-          </button>
-
-          <button
-            type="button"
-            className="cms-card cms-action-tile"
-            onClick={() => onNavigate('patient')}
-            style={{ cursor: 'pointer', textAlign: 'left', padding: '16px' }}
-          >
-            <i className="fa-solid fa-user-plus" style={{ fontSize: '22px', color: '#0b5ed7', marginBottom: '8px' }}></i>
-            <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>Add Member (F2)</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Enroll family patient</div>
-          </button>
-
-          <button
-            type="button"
-            className="cms-card cms-action-tile"
-            onClick={() => onNavigate('case')}
-            style={{ cursor: 'pointer', textAlign: 'left', padding: '16px' }}
-          >
-            <i className="fa-solid fa-clipboard-user" style={{ fontSize: '22px', color: '#10b981', marginBottom: '8px' }}></i>
-            <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>Patient Record (F3)</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>OPD case &amp; diagnosis</div>
-          </button>
-
-          <button
-            type="button"
-            className="cms-card cms-action-tile"
-            onClick={() => onNavigate('certificates')}
-            style={{ cursor: 'pointer', textAlign: 'left', padding: '16px' }}
-          >
-            <i className="fa-solid fa-certificate" style={{ fontSize: '22px', color: '#f59e0b', marginBottom: '8px' }}></i>
-            <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>Certificates (F6)</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Fitness &amp; leave letters</div>
-          </button>
-
-          <button
-            type="button"
-            className="cms-card cms-action-tile"
-            onClick={() => onNavigate('reports')}
-            style={{ cursor: 'pointer', textAlign: 'left', padding: '16px' }}
-          >
-            <i className="fa-solid fa-chart-line" style={{ fontSize: '22px', color: '#8b5cf6', marginBottom: '8px' }}></i>
-            <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>Reports (F5)</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Financial &amp; clinical stats</div>
-          </button>
-        </div>
-      </div>
-
-      {/* Today's / Recent Visits Queue Table */}
-      <div className="cms-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        {/* Revenue */}
+        <div className="cms-card" style={{ padding: '16px', borderLeft: '4px solid #10b981' }}>
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text)' }}>
-              Recent Consultations &amp; Patient Queue
-            </h3>
-            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-muted)' }}>
-              Showing latest clinical visits across the clinic
-            </p>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', marginBottom: '4px' }}>Received</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <i className="fa-solid fa-indian-rupee-sign" style={{ color: '#10b981', fontSize: '18px' }}></i>
+              <span style={{ fontSize: '26px', fontWeight: 800, color: '#059669', fontFamily: 'var(--font-mono)' }}>
+                {fmtMoney(stats.dateCollection).replace('₹', '')}
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Revenue Collected</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Billed: {fmtMoney(stats.billed)} • Due: <span style={{ color: '#ef4444', fontWeight: 700 }}>{fmtMoney(stats.due)}</span>
+            </div>
           </div>
-          <button type="button" className="cms-btn cms-btn-outline" onClick={loadDashboardData}>
-            <i className="fa-solid fa-rotate"></i> Refresh
-          </button>
         </div>
 
-        {recentVisits.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-            <i className="fa-solid fa-inbox" style={{ fontSize: '32px', marginBottom: '10px', display: 'block', opacity: 0.5 }}></i>
-            No consultation visits recorded yet for this clinic.
+        {/* Network */}
+        <div className="cms-card" style={{ padding: '16px', borderLeft: '4px solid #8b5cf6' }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', marginBottom: '4px' }}>Network</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <i className="fa-solid fa-people-group" style={{ color: '#8b5cf6', fontSize: '18px' }}></i>
+              <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{stats.totalPatients}</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Total</span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Registered Patients</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>{stats.totalFamilies} Families Registered</div>
           </div>
-        ) : (
+        </div>
+
+        {/* Outstanding Dues */}
+        <div className="cms-card" style={{ padding: '16px', borderLeft: '4px solid #ef4444' }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', marginBottom: '4px' }}>Critical</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444', fontSize: '18px' }}></i>
+              <span style={{ fontSize: '26px', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+                {fmtMoney(stats.totalDue).replace('₹', '')}
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Outstanding Dues</div>
+            <div style={{ fontSize: '11.5px', color: '#dc2626', marginTop: '2px', fontWeight: 600 }}>
+              {stats.defaulters} Defaulters • Recovery Pending
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ padding: '0 20px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: '0', overflowX: 'auto' }}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === tab.key ? '3px solid var(--primary)' : '3px solid transparent',
+                color: activeTab === tab.key ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight: activeTab === tab.key ? 700 : 500,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <i className={`fa-solid ${tab.icon}`}></i>
+              {tab.label}
+              <span style={{
+                background: activeTab === tab.key ? 'var(--primary)' : 'var(--border)',
+                color: activeTab === tab.key ? '#fff' : 'var(--text-muted)',
+                borderRadius: '10px', padding: '1px 7px', fontSize: '11px', fontWeight: 700,
+              }}>{tabCounts[tab.key]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div style={{ padding: '16px 20px' }}>
+        {/* Table header with search */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
+            {activeTab === 'opd' && `OPD Consultations on ${todayLabel()}`}
+            {activeTab === 'followups' && 'Upcoming Follow-ups'}
+            {activeTab === 'invoices' && 'Invoices & Receipts'}
+            {activeTab === 'patients' && 'Patient Directory'}
+            {activeTab === 'dues' && 'Dues Recovery'}
+          </div>
+          <input
+            type="text"
+            className="cms-input"
+            placeholder="Search table..."
+            value={tableSearch}
+            onChange={(e) => setTableSearch(e.target.value)}
+            style={{ width: '200px', height: '32px', fontSize: '12.5px' }}
+          />
+        </div>
+
+        {/* OPD Consultations Table */}
+        {activeTab === 'opd' && (
           <div className="cms-table-responsive">
             <table className="cms-table">
               <thead>
                 <tr>
-                  <th>Time / Date</th>
-                  <th>Case ID</th>
-                  <th>Patient Name</th>
-                  <th>Family Head</th>
-                  <th>Diagnosis</th>
-                  <th>Charge</th>
-                  <th>Paid</th>
-                  <th>Due</th>
-                  <th style={{ textAlign: 'right' }}>Action</th>
+                  <th>TIME</th>
+                  <th>CASE ID</th>
+                  <th>PATIENT NAME</th>
+                  <th>AGE/SEX</th>
+                  <th>CHIEF COMPLAINT</th>
+                  <th>DIAGNOSIS</th>
+                  <th>TOTAL FEE</th>
+                  <th>RECEIVED</th>
+                  <th>DUE</th>
+                  <th>ACTION</th>
                 </tr>
               </thead>
               <tbody>
-                {recentVisits.map((v, i) => (
-                  <tr key={`${v.caseId}-${i}`}>
+                {filtered(allVisits).length === 0 ? (
+                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                    No consultations found
+                  </td></tr>
+                ) : (
+                  filtered(allVisits).map((v, i) => (
+                    <tr key={`${v.caseId}-${i}`}>
+                      <td style={{ fontSize: '12.5px', fontWeight: 600 }}>{v.time || '--:--'}</td>
+                      <td>
+                        <span className="font-mono" style={{ fontSize: '12px', color: 'var(--primary)' }}>
+                          {v.caseId || '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 700, fontSize: '12.5px' }}>{v.patName}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{v.patName} · PT {v.patientId}</div>
+                      </td>
+                      <td style={{ fontSize: '12.5px' }}>
+                        {v.age || '?'} / {(v.gender || 'M').charAt(0)}
+                      </td>
+                      <td style={{ fontSize: '12.5px', maxWidth: '160px' }}>{v.complaint || '—'}</td>
+                      <td>
+                        {v.diagnosis ? (
+                          <span style={{
+                            background: 'rgba(139,92,246,0.1)', color: '#7c3aed',
+                            borderRadius: '4px', padding: '2px 8px', fontSize: '11.5px', fontWeight: 600
+                          }}>{v.diagnosis}</span>
+                        ) : '—'}
+                      </td>
+                      <td className="font-mono" style={{ fontSize: '12.5px' }}>{fmtMoney(v.charge)}</td>
+                      <td className="font-mono" style={{ fontSize: '12.5px', color: '#059669', fontWeight: 700 }}>{fmtMoney(v.received)}</td>
+                      <td className="font-mono" style={{ fontSize: '12.5px', color: Number(v.due) > 0 ? '#dc2626' : 'var(--text-muted)' }}>
+                        {fmtMoney(v.due)}
+                      </td>
+                      <td>
+                        <button
+                          className="cms-btn cms-btn-ghost"
+                          onClick={() => onNavigate('case', { familyId: v.familyId, patientId: v.patientId })}
+                          style={{ fontSize: '12px', padding: '3px 10px', border: '1px solid var(--primary)', color: 'var(--primary)' }}
+                        >
+                          Case →
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Follow-ups Tab */}
+        {activeTab === 'followups' && (
+          <div className="cms-table-responsive">
+            <table className="cms-table">
+              <thead><tr><th>DATE</th><th>PATIENT</th><th>FAMILY</th><th>NOTES</th><th>ACTION</th></tr></thead>
+              <tbody>
+                {filtered(followUps).length === 0 ? (
+                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No upcoming follow-ups</td></tr>
+                ) : filtered(followUps).map((f, i) => (
+                  <tr key={i}>
+                    <td className="font-mono">{fmtDate(f.date)}</td>
+                    <td style={{ fontWeight: 700 }}>{f.patName}</td>
+                    <td>{f.familyId}</td>
+                    <td>{f.notes || '—'}</td>
                     <td>
-                      <span style={{ fontWeight: 600 }}>{v.time || 'OPD'}</span>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{fmtDate(v.date)}</div>
-                    </td>
-                    <td>
-                      <span className="cms-pill font-mono" style={{ fontSize: '11px' }}>
-                        #{v.caseId}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: 'var(--text)' }}>{v.patName}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        {v.age ? `${v.age} Y` : ''} {v.gender || ''}
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '12.5px' }}>{v.famHead}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '12.5px', color: 'var(--text-dark, #334155)' }}>
-                        {v.diagnosis || 'General Checkup'}
-                      </span>
-                    </td>
-                    <td className="font-mono">{fmtMoney(v.charge)}</td>
-                    <td className="font-mono" style={{ color: '#059669', fontWeight: 600 }}>
-                      {fmtMoney(v.received)}
-                    </td>
-                    <td className="font-mono">
-                      {Number(v.due) > 0 ? (
-                        <span className="cms-pill cms-badge-due">{fmtMoney(v.due)}</span>
-                      ) : (
-                        <span className="cms-pill cms-badge-paid">Paid</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="cms-btn cms-btn-ghost"
-                        onClick={() => onNavigate('case', { familyId: v.familyId, patientId: v.patientId })}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
-                      >
-                        <i className="fa-solid fa-folder-open"></i> Open Case
+                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: f.familyId, patientId: f.patientId })} style={{ fontSize: '12px' }}>
+                        Open →
                       </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Invoices Tab */}
+        {activeTab === 'invoices' && (
+          <div className="cms-table-responsive">
+            <table className="cms-table">
+              <thead><tr><th>DATE</th><th>CASE ID</th><th>PATIENT</th><th>BILLED</th><th>RECEIVED</th><th>DUE</th><th>ACTION</th></tr></thead>
+              <tbody>
+                {filtered(allVisits.filter(v => v.charge > 0)).length === 0 ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No invoices</td></tr>
+                ) : filtered(allVisits.filter(v => v.charge > 0)).map((v, i) => (
+                  <tr key={i}>
+                    <td className="font-mono">{fmtDate(v.date)}</td>
+                    <td className="font-mono" style={{ color: 'var(--primary)' }}>{v.caseId}</td>
+                    <td style={{ fontWeight: 700 }}>{v.patName}</td>
+                    <td className="font-mono">{fmtMoney(v.charge)}</td>
+                    <td className="font-mono" style={{ color: '#059669', fontWeight: 700 }}>{fmtMoney(v.received)}</td>
+                    <td className="font-mono" style={{ color: Number(v.due) > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 700 }}>{fmtMoney(v.due)}</td>
+                    <td>
+                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: v.familyId, patientId: v.patientId })} style={{ fontSize: '12px' }}>Open →</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Patient Directory Tab */}
+        {activeTab === 'patients' && (
+          <div className="cms-table-responsive">
+            <table className="cms-table">
+              <thead><tr><th>PATIENT ID</th><th>PATIENT NAME</th><th>FAMILY HEAD</th><th>AGE</th><th>AREA</th><th>DUE</th><th>ACTION</th></tr></thead>
+              <tbody>
+                {filtered(allPatients).length === 0 ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No patients found</td></tr>
+                ) : filtered(allPatients).map((p, i) => (
+                  <tr key={i}>
+                    <td className="font-mono" style={{ color: 'var(--primary)' }}>{p.id}</td>
+                    <td style={{ fontWeight: 700 }}>{p.name}</td>
+                    <td>{p.famHead}</td>
+                    <td>{p.age || '—'}</td>
+                    <td>{p.area || '—'}</td>
+                    <td className="font-mono" style={{ color: Number(p.due) > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 700 }}>
+                      {fmtMoney(p.due || 0)}
+                    </td>
+                    <td>
+                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: p.famId, patientId: p.id })} style={{ fontSize: '12px' }}>Open →</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Dues Recovery Tab */}
+        {activeTab === 'dues' && (
+          <div className="cms-table-responsive">
+            <table className="cms-table">
+              <thead><tr><th>PATIENT</th><th>FAMILY HEAD</th><th>PHONE</th><th>AREA</th><th>OUTSTANDING DUE</th><th>ACTION</th></tr></thead>
+              <tbody>
+                {filtered(allPatients.filter(p => (p.due || 0) > 0)).length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No outstanding dues 🎉</td></tr>
+                ) : filtered(allPatients.filter(p => (p.due || 0) > 0)).map((p, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 700 }}>{p.name}</td>
+                    <td>{p.famHead}</td>
+                    <td className="font-mono">{p.phone || '—'}</td>
+                    <td>{p.area || '—'}</td>
+                    <td className="font-mono" style={{ color: '#dc2626', fontWeight: 800 }}>{fmtMoney(p.due)}</td>
+                    <td>
+                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: p.famId, patientId: p.id })} style={{ fontSize: '12px' }}>Collect →</button>
                     </td>
                   </tr>
                 ))}
