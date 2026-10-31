@@ -4,9 +4,10 @@ import { showToast } from '../services/api';
 
 export default function LoginView() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('dhyey');
+  const [password, setPassword] = useState('123');
   const [showPass, setShowPass] = useState(false);
+  const [keepSigned, setKeepSigned] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -50,178 +51,393 @@ export default function LoginView() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #095c54 0%, #0d3834 100%)',
-        padding: '20px',
+        background: 'radial-gradient(ellipse at center, #0d322c 0%, #051a16 100%)',
+        padding: '24px',
+        fontFamily: 'var(--font-sans)',
       }}
     >
+      {/* 2-Column Main Login Card */}
       <div
-        className="cms-login-card"
         style={{
           width: '100%',
-          maxWidth: '440px',
-          background: 'var(--surface, #ffffff)',
-          borderRadius: '16px',
-          padding: '36px 32px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+          maxWidth: '890px',
+          borderRadius: '20px',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+          display: 'flex',
+          overflow: 'hidden',
+          background: '#ffffff',
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        {/* Left Side: Brand & Feature Highlights (Dark Green) */}
+        <div
+          style={{
+            width: '48%',
+            background: '#062d26',
+            padding: '36px 32px',
+            color: '#ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            position: 'relative',
+          }}
+        >
+          <div>
+            {/* Top Badge */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '20px',
+                padding: '4px 12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#34d399',
+                marginBottom: '20px',
+              }}
+            >
+              <i className="fa-solid fa-stethoscope" /> Doctor Clinical Practice Portal
+            </div>
+
+            {/* Brand Title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '22px',
+                  boxShadow: '0 0 20px rgba(16, 185, 129, 0.45)',
+                  flexShrink: 0,
+                }}
+              >
+                <i className="fa-solid fa-notes-medical" />
+              </div>
+              <div>
+                <h1 style={{ fontSize: '21px', fontWeight: 900, color: '#ffffff', margin: 0, lineHeight: 1.2 }}>
+                  Dhyey Clinic &amp; Hospital
+                </h1>
+                <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#6ee7b7', letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '2px' }}>
+                  DOCTOR WORKSPACE
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.72)', lineHeight: 1.5, margin: '0 0 20px 0' }}>
+              Comprehensive OPD case records, fast family member indexing, digital clinical prescriptions, and complete medical certificates.
+            </p>
+
+            {/* 3 Feature Boxes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                  <i className="fa-solid fa-users" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#ffffff' }}>Family Head &amp; Member System</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.3 }}>Instant family card grouping with complete shared medical histories and pedigree tracking.</div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                  <i className="fa-solid fa-prescription" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#ffffff' }}>Smart Digital Prescriptions</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.3 }}>Speedy drug dosages, auto-complete shortcuts, and professional prescription prints.</div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                  <i className="fa-solid fa-certificate" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#ffffff' }}>Medical Certificates &amp; Reports</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.3 }}>Quick generation of medical fitness, illness, and leave certificates in 1 click.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom 3 Metrics */}
           <div
             style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #095c54, #146B5C)',
-              color: '#ffffff',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '28px',
-              marginBottom: '16px',
-              boxShadow: '0 10px 15px -3px rgba(9, 92, 84, 0.4)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '8px',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              marginTop: '16px',
             }}
           >
-            <i className="fa-solid fa-stethoscope"></i>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 900, color: '#ffffff' }}>100%</div>
+              <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#6ee7b7', letterSpacing: '0.5px' }}>DOCTOR SCOPED</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 900, color: '#ffffff' }}>F1-F8</div>
+              <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#6ee7b7', letterSpacing: '0.5px' }}>KEYBOARD FLOW</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 900, color: '#ffffff' }}>Offline</div>
+              <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#6ee7b7', letterSpacing: '0.5px' }}>PWA READY</div>
+            </div>
           </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text, #1e293b)', margin: '0 0 6px' }}>
-            Dhyey Clinic &amp; Hospital
-          </h1>
-          <p style={{ fontSize: '13.5px', color: 'var(--text-muted, #64748b)', margin: 0 }}>
-            Doctor Clinical Management System
-          </p>
         </div>
 
-        {errorMsg && (
+        {/* Right Side: Doctor Sign In Form (White) */}
+        <div
+          style={{
+            flex: 1,
+            padding: '36px 36px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+            Doctor Sign In
+          </h2>
+          <p style={{ fontSize: '12.5px', color: '#64748b', margin: '0 0 16px 0' }}>
+            Enter your credentials to access clinical records
+          </p>
+
+          {/* Callout Badge */}
           <div
             style={{
-              padding: '10px 14px',
+              background: '#e6f4f1',
               borderRadius: '8px',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#dc2626',
-              fontSize: '13px',
+              padding: '8px 12px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
+              color: '#095c54',
+              fontSize: '12px',
+              fontWeight: 700,
               marginBottom: '20px',
             }}
           >
-            <i className="fa-solid fa-circle-exclamation"></i>
-            <span>{errorMsg}</span>
+            <i className="fa-solid fa-user-doctor" /> Doctor Clinical Workspace Login
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
-              Username
-            </label>
-            <div style={{ position: 'relative' }}>
-              <i
-                className="fa-solid fa-user-doctor"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
-              ></i>
-              <input
-                type="text"
-                className="cms-input"
-                style={{ width: '100%', paddingLeft: '36px', height: '42px', fontSize: '14px' }}
-                placeholder="Enter doctor username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                required
-              />
+          {errorMsg && (
+            <div
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#dc2626',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '16px',
+              }}
+            >
+              <i className="fa-solid fa-circle-exclamation" />
+              <span>{errorMsg}</span>
             </div>
-          </div>
+          )}
 
-          <div>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
-              Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <i
-                className="fa-solid fa-lock"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
-              ></i>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>
+                Doctor Username or Email *
+              </label>
+              <div style={{ position: 'relative' }}>
+                <i
+                  className="fa-solid fa-user"
+                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '13px' }}
+                />
+                <input
+                  type="text"
+                  className="cms-input"
+                  style={{ width: '100%', paddingLeft: '34px', height: '40px', fontSize: '13.5px', background: '#f8fafc', border: '1px solid #cbd5e1' }}
+                  placeholder="dhyey"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', margin: 0 }}>
+                  Password *
+                </label>
+                <a
+                  href="#forgot"
+                  onClick={(e) => { e.preventDefault(); alert('Default credentials: username "dhyey", password "123"'); }}
+                  style={{ fontSize: '11.5px', color: '#64748b', textDecoration: 'none', fontWeight: 600 }}
+                >
+                  Forgot Password?
+                </a>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <i
+                  className="fa-solid fa-lock"
+                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '13px' }}
+                />
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  className="cms-input"
+                  style={{ width: '100%', paddingLeft: '34px', paddingRight: '38px', height: '40px', fontSize: '13.5px', background: '#f8fafc', border: '1px solid #cbd5e1' }}
+                  placeholder="•••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '2px',
+                  }}
+                >
+                  <i className={`fa-solid ${showPass ? 'fa-eye-slash' : 'fa-eye'}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Keep me signed in checkbox */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer', margin: '2px 0 6px' }}>
               <input
-                type={showPass ? 'text' : 'password'}
-                className="cms-input"
-                style={{ width: '100%', paddingLeft: '36px', paddingRight: '40px', height: '42px', fontSize: '14px' }}
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                type="checkbox"
+                checked={keepSigned}
+                onChange={(e) => setKeepSigned(e.target.checked)}
+                style={{ accentColor: '#059669', width: '15px', height: '15px' }}
               />
+              <span>Keep me signed in on this device</span>
+            </label>
+
+            {/* Gradient Green Sign In Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                height: '42px',
+                background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {loading ? (
+                <span><i className="fa-solid fa-circle-notch fa-spin" /> Authenticating...</span>
+              ) : (
+                <span>Sign In to Workspace <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px' }} /></span>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Doctor Logins */}
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.5px', textAlign: 'center', marginBottom: '8px', textTransform: 'uppercase' }}>
+              Quick Doctor Logins
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => setShowPass(!showPass)}
+                onClick={() => handleQuickLogin('dhyey', '123')}
                 style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '20px',
+                  padding: '5px 12px',
+                  fontSize: '11.5px',
+                  color: '#334155',
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                <i className={`fa-solid ${showPass ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                <i className="fa-solid fa-user-doctor" style={{ color: '#059669', fontSize: '11px' }} />
+                <span>Dr. Chirag (dhyey / 123)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('mehul', '123')}
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '20px',
+                  padding: '5px 12px',
+                  fontSize: '11.5px',
+                  color: '#334155',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <i className="fa-solid fa-user-doctor" style={{ color: '#059669', fontSize: '11px' }} />
+                <span>Dr. Mehul (mehul / 123)</span>
               </button>
             </div>
-          </div>
-
-          <button
-            type="submit"
-            className="cms-btn cms-btn-primary"
-            disabled={loading}
-            style={{ width: '100%', height: '44px', fontSize: '15px', fontWeight: 700, marginTop: '8px' }}
-          >
-            {loading ? (
-              <span><i className="fa-solid fa-circle-notch fa-spin"></i> Authenticating...</span>
-            ) : (
-              <span><i className="fa-solid fa-right-to-bracket"></i> Sign In to Doctor Workspace</span>
-            )}
-          </button>
-        </form>
-
-        <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', marginBottom: '10px' }}>
-            Quick Demo Doctor Accounts
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              type="button"
-              className="cms-btn cms-btn-ghost"
-              onClick={() => handleQuickLogin('dhyey', '123')}
-              style={{
-                width: '100%',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                fontSize: '12.5px',
-              }}
-            >
-              <span><strong>Dr. Chirag Paghdal</strong> (B.H.M.S.)</span>
-              <span className="cms-pill" style={{ fontSize: '10px' }}>dhyey / 123</span>
-            </button>
-            <button
-              type="button"
-              className="cms-btn cms-btn-ghost"
-              onClick={() => handleQuickLogin('mehul', '123')}
-              style={{
-                width: '100%',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                fontSize: '12.5px',
-              }}
-            >
-              <span><strong>Dr. Mehul Shah</strong> (M.D.)</span>
-              <span className="cms-pill" style={{ fontSize: '10px' }}>mehul / 123</span>
-            </button>
           </div>
         </div>
       </div>

@@ -98,16 +98,71 @@ const DEFAULT_AREAS = [
   { id: 'a12', name: 'Amroli', city: 'Surat', createdAt: '01/01/2026' },
 ];
 
+const DEFAULT_MEDICINES = [
+  { id: 'm1', code: 'PCM', name: 'Paracetamol 650mg (Dolo 650 / Calpol)', createdAt: '01/01/2026' },
+  { id: 'm2', code: 'PCM500', name: 'Paracetamol 500mg (Crocin)', createdAt: '01/01/2026' },
+  { id: 'm3', code: 'IBU', name: 'Ibuprofen 400mg (Brufen)', createdAt: '01/01/2026' },
+  { id: 'm4', code: 'COMBI', name: 'Combiflam (Ibuprofen + Paracetamol)', createdAt: '01/01/2026' },
+  { id: 'm5', code: 'ZP', name: 'Zerodol-P (Aceclofenac 100mg + Paracetamol 325mg)', createdAt: '01/01/2026' },
+  { id: 'm6', code: '-', name: 'Zerodol-SP (Aceclo + Paracetamol + Serratiopeptidase)', createdAt: '01/01/2026' },
+  { id: 'm7', code: '-', name: 'Voveran 50mg (Diclofenac Sodium)', createdAt: '01/01/2026' },
+  { id: 'm8', code: '-', name: 'Meftal-Spas (Mefenamic Acid + Dicyclomine)', createdAt: '01/01/2026' },
+  { id: 'm9', code: '-', name: 'Cyclopam (Dicyclomine + Paracetamol)', createdAt: '01/01/2026' },
+  { id: 'm10', code: '-', name: 'Drotin-M (Drotaverine 80mg + Mefenamic Acid 250mg)', createdAt: '01/01/2026' },
+  { id: 'm11', code: '-', name: 'Tramadol 50mg + Paracetamol (Ultracet)', createdAt: '01/01/2026' },
+];
+
+const DEFAULT_ALLERGIES = [
+  { id: 'al1', code: 'NONE', name: 'None', createdAt: '01/01/2026' },
+  { id: 'al2', code: 'PEN', name: 'Penicillin', createdAt: '01/01/2026' },
+  { id: 'al3', code: 'SULFA', name: 'Sulfa Drugs', createdAt: '01/01/2026' },
+  { id: 'al4', code: 'ASP', name: 'Aspirin / NSAIDs', createdAt: '01/01/2026' },
+  { id: 'al5', code: 'DUST', name: 'Dust / Pollen', createdAt: '01/01/2026' },
+  { id: 'al6', code: 'NUT', name: 'Peanuts / Nuts', createdAt: '01/01/2026' },
+  { id: 'al7', code: 'LATEX', name: 'Latex', createdAt: '01/01/2026' },
+  { id: 'al8', code: 'CIPRO', name: 'Ciprofloxacin', createdAt: '01/01/2026' },
+  { id: 'al9', code: 'AMOX', name: 'Amoxicillin', createdAt: '01/01/2026' },
+];
+
+const DEFAULT_RELATIONS = [
+  { id: 'r1', code: 'HEAD', name: 'Head', createdAt: '01/01/2026' },
+  { id: 'r2', code: 'WIFE', name: 'Wife', createdAt: '01/01/2026' },
+  { id: 'r3', code: 'HUSB', name: 'Husband', createdAt: '01/01/2026' },
+  { id: 'r4', code: 'SON', name: 'Son', createdAt: '01/01/2026' },
+  { id: 'r5', code: 'DAU', name: 'Daughter', createdAt: '01/01/2026' },
+  { id: 'r6', code: 'FAT', name: 'Father', createdAt: '01/01/2026' },
+  { id: 'r7', code: 'MOT', name: 'Mother', createdAt: '01/01/2026' },
+  { id: 'r8', code: 'BRO', name: 'Brother', createdAt: '01/01/2026' },
+  { id: 'r9', code: 'SIS', name: 'Sister', createdAt: '01/01/2026' },
+  { id: 'r10', code: 'GFAT', name: 'Grandfather', createdAt: '01/01/2026' },
+  { id: 'r11', code: 'GMOT', name: 'Grandmother', createdAt: '01/01/2026' },
+  { id: 'r12', code: 'UNC', name: 'Uncle', createdAt: '01/01/2026' },
+  { id: 'r13', code: 'AUNT', name: 'Aunt', createdAt: '01/01/2026' },
+  { id: 'r14', code: 'OTH', name: 'Other', createdAt: '01/01/2026' },
+];
+
+const DEFAULT_SOCIETIES = [
+  { id: 's1', name: 'Central Society', area: 'Main Road', createdAt: '01/01/2026' },
+  { id: 's2', name: 'Shanti Niketan Apt', area: 'Vastrapur', createdAt: '01/01/2026' },
+  { id: 's3', name: 'Gokuldham Society', area: 'Satellite', createdAt: '01/01/2026' },
+  { id: 's4', name: 'Surya Kiran Heights', area: 'Satellite', createdAt: '01/01/2026' },
+  { id: 's5', name: 'Radhe Krishna Bunglows', area: 'Bopal', createdAt: '01/01/2026' },
+  { id: 's6', name: 'Vrindavan Society', area: 'Thaltej', createdAt: '01/01/2026' },
+  { id: 's7', name: 'Royal Residency', area: 'Gota', createdAt: '01/01/2026' },
+  { id: 's8', name: 'Shivam Heights', area: 'Maninagar', createdAt: '01/01/2026' },
+  { id: 's9', name: 'Silver Crest', area: 'Science City', createdAt: '01/01/2026' },
+];
+
 const MASTER_TABS = [
-  { key: 'dietary', label: 'Dietary Suggestions', icon: 'fa-utensils', btnLabel: 'Dietary Suggestion', title: 'Dietary Suggestion Templates', badgeLabel: 'Templates' },
-  { key: 'complaints', label: 'Complaints', icon: 'fa-comment-medical', btnLabel: 'Complaint', title: 'All Clinical Complaints & Symptoms', badgeLabel: 'Complaints' },
-  { key: 'investigations', label: 'Investigations (Reports)', icon: 'fa-flask-vial', btnLabel: 'Investigation', title: 'Laboratory & Diagnostic Investigations', badgeLabel: 'Tests' },
-  { key: 'areas', label: 'Area / Location', icon: 'fa-location-dot', btnLabel: 'Area', title: 'Area & Locality Master', badgeLabel: 'Areas' },
-  { key: 'medicines', label: 'Medicine Catalogue', icon: 'fa-pills', btnLabel: 'Medicine', title: 'Medicine Drug Formulary', badgeLabel: 'Medicines' },
-  { key: 'allergies', label: 'Known Allergies', icon: 'fa-shield-halved', btnLabel: 'Allergy', title: 'Known Medical Allergies', badgeLabel: 'Allergies' },
-  { key: 'relations', label: 'Relation to Head', icon: 'fa-users', btnLabel: 'Relation', title: 'Relation to Head of Family', badgeLabel: 'Relations' },
-  { key: 'societies', label: 'Society / Flat', icon: 'fa-building', btnLabel: 'Society', title: 'Residential Societies & Flats', badgeLabel: 'Societies' },
-  { key: 'navigation', label: 'Navigation Shortcuts', icon: 'fa-keyboard', btnLabel: 'Shortcut', title: 'Navigation & Function Hotkeys', badgeLabel: 'Shortcuts' },
+  { key: 'dietary', label: 'Dietary Suggestions', icon: 'fa-utensils', btnLabel: 'Dietary Suggestion', title: 'Dietary Suggestion Templates', badgeLabel: 'Templates', count: 7 },
+  { key: 'complaints', label: 'Complaints', icon: 'fa-comment-medical', btnLabel: 'Complaint', title: 'All Clinical Complaints & Symptoms', badgeLabel: 'Complaints', count: 12 },
+  { key: 'investigations', label: 'Investigations (Reports)', icon: 'fa-flask-vial', btnLabel: 'Investigation', title: 'Laboratory & Diagnostic Investigations', badgeLabel: 'Tests', count: 14 },
+  { key: 'areas', label: 'Area / Location', icon: 'fa-location-dot', btnLabel: 'Area', title: 'Area & Locality Master', badgeLabel: 'Areas', count: 12 },
+  { key: 'medicines', label: 'Medicine Catalogue', icon: 'fa-pills', btnLabel: 'Medicine', title: 'Clinical Medicine Catalogue', badgeLabel: 'Medicines', count: 47 },
+  { key: 'allergies', label: 'Known Allergies', icon: 'fa-shield-halved', btnLabel: 'Allergy', title: 'Known Allergies Directory', badgeLabel: 'Allergies', count: 9 },
+  { key: 'relations', label: 'Relation to Head', icon: 'fa-users', btnLabel: 'Relation', title: 'Relation Hierarchy Master', badgeLabel: 'Relations', count: 14 },
+  { key: 'societies', label: 'Society / Flat', icon: 'fa-building', btnLabel: 'Society', title: 'Society & Apartment Registry', badgeLabel: 'Societies', count: 9 },
+  { key: 'navigation', label: 'Navigation Shortcuts', icon: 'fa-keyboard', btnLabel: 'Shortcut', title: 'Navigation Shortcuts Directory', badgeLabel: 'Shortcuts', count: 10 },
 ];
 
 export default function MastersView() {
@@ -126,7 +181,7 @@ export default function MastersView() {
   const [formEat, setFormEat] = useState('');
   const [formNotEat, setFormNotEat] = useState('');
   const [formCity, setFormCity] = useState('Ahmedabad');
-  const [formDosage, setFormDosage] = useState('');
+  const [formArea, setFormArea] = useState('Vastrapur');
 
   useEffect(() => {
     loadTabItems(activeTab);
@@ -147,6 +202,10 @@ export default function MastersView() {
         if (tabKey === 'complaints') list = DEFAULT_COMPLAINTS;
         else if (tabKey === 'investigations') list = DEFAULT_INVESTIGATIONS;
         else if (tabKey === 'areas') list = DEFAULT_AREAS;
+        else if (tabKey === 'medicines') list = DEFAULT_MEDICINES;
+        else if (tabKey === 'allergies') list = DEFAULT_ALLERGIES;
+        else if (tabKey === 'relations') list = DEFAULT_RELATIONS;
+        else if (tabKey === 'societies') list = DEFAULT_SOCIETIES;
         saveSharedMasterCollection(tabKey, list);
       }
       setGenericItems(list || []);
@@ -160,7 +219,7 @@ export default function MastersView() {
     setFormEat('');
     setFormNotEat('');
     setFormCity('Ahmedabad');
-    setFormDosage('');
+    setFormArea('Vastrapur');
     setIsModalOpen(true);
   };
 
@@ -171,7 +230,7 @@ export default function MastersView() {
     setFormEat(item.eat || '');
     setFormNotEat(item.notEat || '');
     setFormCity(item.city || 'Ahmedabad');
-    setFormDosage(item.dosage || item.defaultDosage || '');
+    setFormArea(item.area || 'Vastrapur');
     setIsModalOpen(true);
   };
 
@@ -213,7 +272,7 @@ export default function MastersView() {
           code: formCode ? formCode.trim().toUpperCase() : item.code,
           name: formName.trim() || item.name,
           city: formCity.trim() || item.city,
-          dosage: formDosage.trim() || item.dosage,
+          area: formArea.trim() || item.area,
         } : item);
         showToast(`Updated ${formName || editingItem.name}`);
       } else {
@@ -222,7 +281,7 @@ export default function MastersView() {
           code: formCode ? formCode.trim().toUpperCase() : undefined,
           name: formName.trim(),
           city: activeTab === 'areas' ? formCity.trim() : undefined,
-          dosage: activeTab === 'medicines' ? formDosage.trim() : undefined,
+          area: activeTab === 'societies' ? formArea.trim() : undefined,
           createdAt: '01/01/2026',
         };
         updated = [...genericItems, newItem];
@@ -263,7 +322,7 @@ export default function MastersView() {
   const filteredGeneric = genericItems.filter(i => {
     const q = filter.toLowerCase().trim();
     if (!q) return true;
-    return (i.name || '').toLowerCase().includes(q) || (i.code || '').toLowerCase().includes(q) || (i.city || '').toLowerCase().includes(q);
+    return (i.name || '').toLowerCase().includes(q) || (i.code || '').toLowerCase().includes(q) || (i.city || '').toLowerCase().includes(q) || (i.area || '').toLowerCase().includes(q);
   });
 
   const totalCount = activeTab === 'dietary' ? filteredDietary.length : filteredGeneric.length;
@@ -308,7 +367,6 @@ export default function MastersView() {
       }}>
         {MASTER_TABS.map((tab) => {
           const isActive = activeTab === tab.key;
-          const count = tab.key === 'dietary' ? dietaryItems.length : (tab.key === activeTab ? genericItems.length : tab.count || 12);
           return (
             <button
               key={tab.key}
@@ -329,7 +387,7 @@ export default function MastersView() {
                 color: isActive ? '#fff' : 'var(--text-muted)',
                 borderRadius: '8px', padding: '1px 6px', fontSize: '11px', fontWeight: 800
               }}>
-                {count}
+                {tab.count}
               </span>
             </button>
           );
@@ -360,12 +418,7 @@ export default function MastersView() {
                 type="text"
                 className="cms-input"
                 style={{ height: '34px', width: '240px', paddingLeft: '30px', fontSize: '12px' }}
-                placeholder={
-                  activeTab === 'dietary' ? 'Search shortcut or food items...' :
-                  activeTab === 'complaints' ? 'Search complaint name or code...' :
-                  activeTab === 'investigations' ? 'Search test name or code...' :
-                  activeTab === 'areas' ? 'Search area name or city...' : 'Search master catalog...'
-                }
+                placeholder={`Search ${currentTabInfo.btnLabel.toLowerCase()} or code...`}
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
               />
@@ -381,7 +434,7 @@ export default function MastersView() {
           </div>
         </div>
 
-        {/* ── TAB 1: DIETARY SUGGESTIONS TABLE (Photo 2) ── */}
+        {/* ── TAB: DIETARY SUGGESTIONS TABLE ── */}
         {activeTab === 'dietary' && (
           <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
             <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -422,20 +475,10 @@ export default function MastersView() {
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(d)}
-                          style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }}
-                          title="Edit"
-                        >
+                        <button type="button" onClick={() => openEditModal(d)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
                           <i className="fa-solid fa-pen-to-square" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteDietary(d.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
-                          title="Delete"
-                        >
+                        <button type="button" onClick={() => handleDeleteDietary(d.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
                           <i className="fa-solid fa-trash" />
                         </button>
                       </div>
@@ -447,7 +490,7 @@ export default function MastersView() {
           </div>
         )}
 
-        {/* ── TAB 2: COMPLAINTS TABLE (Photo 3) ── */}
+        {/* ── TAB: COMPLAINTS TABLE ── */}
         {activeTab === 'complaints' && (
           <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
             <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -482,20 +525,10 @@ export default function MastersView() {
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(item)}
-                          style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }}
-                          title="Edit"
-                        >
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
                           <i className="fa-solid fa-pen-to-square" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGeneric(item.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
-                          title="Delete"
-                        >
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
                           <i className="fa-solid fa-trash" />
                         </button>
                       </div>
@@ -507,7 +540,7 @@ export default function MastersView() {
           </div>
         )}
 
-        {/* ── TAB 3: INVESTIGATIONS TABLE (Photo 4) ── */}
+        {/* ── TAB: INVESTIGATIONS TABLE ── */}
         {activeTab === 'investigations' && (
           <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
             <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -542,20 +575,10 @@ export default function MastersView() {
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(item)}
-                          style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }}
-                          title="Edit"
-                        >
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
                           <i className="fa-solid fa-pen-to-square" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGeneric(item.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
-                          title="Delete"
-                        >
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
                           <i className="fa-solid fa-trash" />
                         </button>
                       </div>
@@ -567,7 +590,7 @@ export default function MastersView() {
           </div>
         )}
 
-        {/* ── TAB 4: AREA / LOCATION TABLE (Photo 5) ── */}
+        {/* ── TAB: AREA / LOCATION TABLE ── */}
         {activeTab === 'areas' && (
           <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
             <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -598,20 +621,10 @@ export default function MastersView() {
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(item)}
-                          style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }}
-                          title="Edit"
-                        >
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
                           <i className="fa-solid fa-pen-to-square" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGeneric(item.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
-                          title="Delete"
-                        >
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
                           <i className="fa-solid fa-trash" />
                         </button>
                       </div>
@@ -623,15 +636,168 @@ export default function MastersView() {
           </div>
         )}
 
-        {/* ── GENERIC LIST TABLE FOR OTHER TABS (Medicines, Allergies, Relations, Societies, Navigation) ── */}
-        {!['dietary', 'complaints', 'investigations', 'areas'].includes(activeTab) && (
+        {/* ── TAB: MEDICINE CATALOGUE TABLE (Photo 1) ── */}
+        {activeTab === 'medicines' && (
           <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
             <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid var(--border)' }}>
-                  <th style={{ padding: '10px 12px', width: '40px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>NAME / VALUE</th>
-                  <th style={{ padding: '10px 12px', width: '180px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>DETAILS / DOSAGE</th>
+                  <th style={{ padding: '10px 12px', width: '35px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
+                  <th style={{ padding: '10px 12px', width: '130px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SHORTCUT CODE</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>MEDICINE / BRAND / GENERIC NAME</th>
+                  <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ADDED ON</th>
+                  <th style={{ padding: '10px 12px', width: '80px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGeneric.map((item, idx) => (
+                  <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {idx + 1}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        background: '#ecfeff', color: '#0891b2', border: '1px solid #a5f3fc',
+                        borderRadius: '5px', padding: '2px 8px', fontSize: '11.5px', fontWeight: 800, fontFamily: 'var(--font-mono)'
+                      }}>
+                        {item.code || '-'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
+                      <span style={{ marginRight: '6px', fontSize: '12px' }}>💊</span>
+                      {item.name}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {item.createdAt || '01/01/2026'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
+                          <i className="fa-solid fa-pen-to-square" />
+                        </button>
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
+                          <i className="fa-solid fa-trash" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── TAB: KNOWN ALLERGIES TABLE (Photo 2) ── */}
+        {activeTab === 'allergies' && (
+          <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid var(--border)' }}>
+                  <th style={{ padding: '10px 12px', width: '35px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
+                  <th style={{ padding: '10px 12px', width: '130px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SHORTCUT / CODE</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ALLERGY / ALLERGEN NAME</th>
+                  <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ADDED ON</th>
+                  <th style={{ padding: '10px 12px', width: '80px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGeneric.map((item, idx) => (
+                  <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {idx + 1}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        background: '#fce7f3', color: '#be185d', border: '1px solid #fbcfe8',
+                        borderRadius: '5px', padding: '2px 8px', fontSize: '11.5px', fontWeight: 800, fontFamily: 'var(--font-mono)'
+                      }}>
+                        {item.code || item.id}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
+                      <span style={{ marginRight: '6px', fontSize: '12px', color: '#dc2626' }}>⚠️</span>
+                      {item.name}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {item.createdAt || '01/01/2026'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
+                          <i className="fa-solid fa-pen-to-square" />
+                        </button>
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
+                          <i className="fa-solid fa-trash" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── TAB: RELATION TO HEAD TABLE (Photo 3) ── */}
+        {activeTab === 'relations' && (
+          <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid var(--border)' }}>
+                  <th style={{ padding: '10px 12px', width: '35px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
+                  <th style={{ padding: '10px 12px', width: '130px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SHORTCUT / CODE</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>FAMILY RELATION NAME</th>
+                  <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ADDED ON</th>
+                  <th style={{ padding: '10px 12px', width: '80px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGeneric.map((item, idx) => (
+                  <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {idx + 1}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        background: '#f3e8ff', color: '#7e22ce', border: '1px solid #e9d5ff',
+                        borderRadius: '5px', padding: '2px 8px', fontSize: '11.5px', fontWeight: 800, fontFamily: 'var(--font-mono)'
+                      }}>
+                        {item.code || item.id}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
+                      <span style={{ marginRight: '6px', fontSize: '12px', color: '#7e22ce' }}>👥</span>
+                      {item.name}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {item.createdAt || '01/01/2026'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
+                          <i className="fa-solid fa-pen-to-square" />
+                        </button>
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
+                          <i className="fa-solid fa-trash" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── TAB: SOCIETY / FLAT TABLE (Photo 4) ── */}
+        {activeTab === 'societies' && (
+          <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid var(--border)' }}>
+                  <th style={{ padding: '10px 12px', width: '35px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SOCIETY / COMPLEX / FLAT NAME</th>
+                  <th style={{ padding: '10px 12px', width: '220px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>AREA / LOCALITY</th>
                   <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ADDED ON</th>
                   <th style={{ padding: '10px 12px', width: '80px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIONS</th>
                 </tr>
@@ -643,30 +809,21 @@ export default function MastersView() {
                       {idx + 1}
                     </td>
                     <td style={{ padding: '12px', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
+                      <span style={{ marginRight: '6px', fontSize: '12px' }}>🏢</span>
                       {item.name}
                     </td>
                     <td style={{ padding: '12px', fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                      {item.dosage || item.defaultDosage || item.category || item.description || 'Standard'}
+                      {item.area || 'Vastrapur'}
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                       {item.createdAt || '01/01/2026'}
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(item)}
-                          style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }}
-                          title="Edit"
-                        >
+                        <button type="button" onClick={() => openEditModal(item)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '13px' }} title="Edit">
                           <i className="fa-solid fa-pen-to-square" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGeneric(item.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }}
-                          title="Delete"
-                        >
+                        <button type="button" onClick={() => handleDeleteGeneric(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }} title="Delete">
                           <i className="fa-solid fa-trash" />
                         </button>
                       </div>
@@ -678,7 +835,52 @@ export default function MastersView() {
           </div>
         )}
 
-        {/* ── TABLE FOOTER PAGINATION (Exact match with screenshot 2, 3, 4, 5) ── */}
+        {/* ── TAB: NAVIGATION SHORTCUTS TABLE ── */}
+        {activeTab === 'navigation' && (
+          <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid var(--border)' }}>
+                  <th style={{ padding: '10px 12px', width: '35px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
+                  <th style={{ padding: '10px 12px', width: '130px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>HOTKEY</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ACTION / DESTINATION</th>
+                  <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ADDED ON</th>
+                  <th style={{ padding: '10px 12px', width: '80px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { hotkey: 'F1', action: 'Family Head Registration' },
+                  { hotkey: 'F2', action: 'Add Family Member' },
+                  { hotkey: 'F3', action: 'Patient Record / Consultation' },
+                  { hotkey: 'F4', action: 'Clinical Dashboard' },
+                  { hotkey: 'F5', action: 'Reports & Analytics' },
+                  { hotkey: 'F6', action: 'Medical Certificate' },
+                  { hotkey: 'F7', action: 'Master Data & Shortcuts' },
+                  { hotkey: 'F8', action: 'Doctor Help & Shortcuts Guide' },
+                  { hotkey: 'Esc', action: 'Close Active Form or Modal' },
+                  { hotkey: 'Enter', action: 'Submit or Save Active Form' },
+                ].map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>{idx + 1}</td>
+                    <td style={{ padding: '12px' }}>
+                      <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '2px 8px', fontSize: '12px', fontWeight: 800 }}>
+                        {item.hotkey}
+                      </kbd>
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>{item.action}</td>
+                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>01/01/2026</td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>System</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── TABLE FOOTER PAGINATION ── */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           flexWrap: 'wrap', gap: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle, #f1f5f9)',
@@ -781,8 +983,8 @@ export default function MastersView() {
                 </>
               )}
 
-              {/* Complaints & Investigations Fields */}
-              {['complaints', 'investigations'].includes(activeTab) && (
+              {/* Complaints, Investigations, Medicines, Allergies, Relations Fields */}
+              {['complaints', 'investigations', 'medicines', 'allergies', 'relations'].includes(activeTab) && (
                 <>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#475569', marginBottom: '5px', textTransform: 'uppercase' }}>
@@ -791,7 +993,12 @@ export default function MastersView() {
                     <input
                       className="cms-input font-mono"
                       style={{ height: '36px', fontSize: '13px', fontWeight: 700 }}
-                      placeholder={activeTab === 'complaints' ? 'e.g. FEV, COUGH, HEAD' : 'e.g. CBC, BSF, LIPID'}
+                      placeholder={
+                        activeTab === 'complaints' ? 'e.g. FEV, COUGH, HEAD' :
+                        activeTab === 'investigations' ? 'e.g. CBC, BSF, LIPID' :
+                        activeTab === 'medicines' ? 'e.g. PCM, IBU, COMBI' :
+                        activeTab === 'allergies' ? 'e.g. PEN, DUST, NUT' : 'e.g. SON, DAU, WIFE'
+                      }
                       value={formCode}
                       onChange={e => setFormCode(e.target.value)}
                       required
@@ -799,12 +1006,12 @@ export default function MastersView() {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#475569', marginBottom: '5px', textTransform: 'uppercase' }}>
-                      {activeTab === 'complaints' ? 'Complaint / Symptom Full Name *' : 'Investigation / Lab Test Full Name *'}
+                      {currentTabInfo.btnLabel} Full Name *
                     </label>
                     <input
                       className="cms-input"
                       style={{ height: '36px', fontSize: '13px' }}
-                      placeholder={activeTab === 'complaints' ? 'e.g. Fever / High Temperature' : 'e.g. Complete Blood Count (CBC)'}
+                      placeholder={`Enter full ${currentTabInfo.btnLabel.toLowerCase()} name...`}
                       value={formName}
                       onChange={e => setFormName(e.target.value)}
                       required
@@ -845,17 +1052,17 @@ export default function MastersView() {
                 </>
               )}
 
-              {/* Other Master Fields (Medicine, Allergy, Relation, Society, Nav) */}
-              {!['dietary', 'complaints', 'investigations', 'areas'].includes(activeTab) && (
+              {/* Society / Flat Fields */}
+              {activeTab === 'societies' && (
                 <>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#475569', marginBottom: '5px', textTransform: 'uppercase' }}>
-                      {currentTabInfo.btnLabel} Name / Description *
+                      Society / Complex / Flat Name *
                     </label>
                     <input
                       className="cms-input"
                       style={{ height: '36px', fontSize: '13px' }}
-                      placeholder={`Enter ${currentTabInfo.btnLabel} name...`}
+                      placeholder="e.g. Shanti Niketan Apt, Gokuldham Society"
                       value={formName}
                       onChange={e => setFormName(e.target.value)}
                       required
@@ -863,14 +1070,15 @@ export default function MastersView() {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#475569', marginBottom: '5px', textTransform: 'uppercase' }}>
-                      Details / Notes / Dosage
+                      Area / Locality *
                     </label>
                     <input
                       className="cms-input"
                       style={{ height: '36px', fontSize: '13px' }}
-                      placeholder="e.g. Tablet, 1-0-1 AF, or category..."
-                      value={formDosage}
-                      onChange={e => setFormDosage(e.target.value)}
+                      placeholder="e.g. Vastrapur, Satellite"
+                      value={formArea}
+                      onChange={e => setFormArea(e.target.value)}
+                      required
                     />
                   </div>
                 </>

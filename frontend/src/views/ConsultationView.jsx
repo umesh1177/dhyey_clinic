@@ -98,6 +98,10 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   const [labReportFile, setLabReportFile]         = useState(null);
   const fileInputRef                              = useRef(null);
 
+  /* hover & expansion for case history */
+  const [hoveredCaseId, setHoveredCaseId]         = useState(null);
+  const [expandedCaseId, setExpandedCaseId]       = useState(null);
+
   /* history filters */
   const [showDueOnly, setShowDueOnly]         = useState(false);
   const [historyDateFilter, setHistoryDateFilter] = useState('');
@@ -714,176 +718,96 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
         </div>
       </div>
 
-      {/* ── VISIT FORM CARD (NEW VISIT OR EDIT VISIT) ─────────────────── */}
-      {isFormOpen && (
+      {/* ── NEW VISIT FORM CARD (TOP) ─────────────────────────────── */}
+      {isFormOpen && !editingCaseId && (
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '10px', padding: '16px 18px', marginBottom: '14px',
         }}>
-          {editingCaseId ? (
-            /* ── EDITING VISIT HEADER (Exact Screenshot 9) ── */
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          {/* ── NEW VISIT HEADER (Exact Screenshot 10) ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>
-                Editing Visit #1 — Case {editingCaseId}
+                New Visit #{visitNum}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowLabModal(true)}
-                  style={{
-                    background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
-                    padding: '4px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                  }}
-                >
-                  <i className="fa-regular fa-file-lines" /> Attach Report
-                </button>
-                <button
-                  type="button"
-                  onClick={resetVisitForm}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1 }}
-                  title="Close form"
-                >
-                  ×
-                </button>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                border: '1px solid #cbd5e1', borderRadius: '6px', padding: '3px 8px', background: '#fff'
+              }}>
+                <span style={{ fontSize: '12px', fontWeight: 700 }}>{fmtDMY(visitDate)}</span>
+                <i className="fa-regular fa-calendar" style={{ color: '#64748b', fontSize: '12px' }} />
               </div>
             </div>
-          ) : (
-            /* ── NEW VISIT HEADER (Exact Screenshot 10) ── */
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>
-                  New Visit #{visitNum}
-                </span>
-                <div style={{
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setShowLabModal(true)}
+                style={{
+                  background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
+                  padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  border: '1px solid #cbd5e1', borderRadius: '6px', padding: '3px 8px', background: '#fff'
-                }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>{fmtDMY(visitDate)}</span>
-                  <i className="fa-regular fa-calendar" style={{ color: '#64748b', fontSize: '12px' }} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowLabModal(true)}
-                  style={{
-                    background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
-                    padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                  }}
-                >
-                  <i className="fa-regular fa-file-lines" /> Attach Report
-                </button>
-                <button
-                  type="button"
-                  onClick={resetVisitForm}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1 }}
-                  title="Close form"
-                >
-                  ×
-                </button>
-              </div>
+                }}
+              >
+                <i className="fa-regular fa-file-lines" /> Attach Report
+              </button>
+              <button
+                type="button"
+                onClick={resetVisitForm}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1 }}
+                title="Close form"
+              >
+                ×
+              </button>
             </div>
-          )}
+          </div>
 
-          {/* ── VITALS ROW ── */}
-          {editingCaseId ? (
-            /* 7 Columns for Edit Visit */
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '120px 80px 80px 90px 110px 1.2fr 1.8fr',
-              gap: '8px', marginBottom: '14px',
-            }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>DATE</label>
-                <input type="date" className="cms-input" style={{ height: '30px', fontSize: '11.5px', padding: '0 6px' }}
-                  value={visitDate} onChange={e => setVisitDate(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>BP</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="130/85"
-                  value={bp} onChange={e => setBp(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>SUGAR</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="110"
-                  value={sugar} onChange={e => setSugar(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
-                  value={other} onChange={e => setOther(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>REFERENCE</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="Dr. Shah"
-                  value={reference} onChange={e => setReference(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>INVESTIGATION</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                  placeholder="e.g. CBC..."
-                  value={investigation} onChange={e => setInvestigation(e.target.value)}
-                  list="investigations-list" />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>COMPLAINT</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                  placeholder="High fever, body chills and shivering for 2 days"
-                  value={complaint} onChange={e => setComplaint(e.target.value)}
-                  list="complaints-list" />
-              </div>
+          {/* ── VITALS ROW (6 columns) ── */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '85px 85px 85px 95px 1.4fr 1.8fr',
+            gap: '8px', marginBottom: '14px',
+          }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>BP</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="120/80"
+                value={bp} onChange={e => setBp(e.target.value)} />
             </div>
-          ) : (
-            /* 6 Columns for New Visit */
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '85px 85px 85px 95px 1.4fr 1.8fr',
-              gap: '8px', marginBottom: '14px',
-            }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>BP</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="120/80"
-                  value={bp} onChange={e => setBp(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>SUGAR</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
-                  value={sugar} onChange={e => setSugar(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
-                  value={other} onChange={e => setOther(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>REFERENCE</label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
-                  value={reference} onChange={e => setReference(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                  INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(COMMA-SEPARATED)</span>
-                </label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                  placeholder="e.g. CBC, Lipid Profile, Urine R/M..."
-                  value={investigation} onChange={e => setInvestigation(e.target.value)}
-                  list="investigations-list" />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                  COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(COMMA-SEPARATED)</span>
-                </label>
-                <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                  placeholder="e.g. Fever, Cough, Headache..."
-                  value={complaint} onChange={e => setComplaint(e.target.value)}
-                  list="complaints-list" />
-              </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>SUGAR</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
+                value={sugar} onChange={e => setSugar(e.target.value)} />
             </div>
-          )}
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
+                value={other} onChange={e => setOther(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>REFERENCE</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
+                value={reference} onChange={e => setReference(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(COMMA-SEPARATED)</span>
+              </label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
+                placeholder="e.g. CBC, Lipid Profile, Urine R/M..."
+                value={investigation} onChange={e => setInvestigation(e.target.value)}
+                list="investigations-list" />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(COMMA-SEPARATED)</span>
+              </label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
+                placeholder="e.g. Fever, Cough, Headache..."
+                value={complaint} onChange={e => setComplaint(e.target.value)}
+                list="complaints-list" />
+            </div>
+          </div>
 
-          {/* ── DIETARY ADVICE SECTION (Exact green bordered card) ── */}
+          {/* ── DIETARY ADVICE SECTION ── */}
           <div style={{
             border: '1px solid #86efac', borderRadius: '8px',
             padding: '10px 14px', marginBottom: '14px', background: '#f0fdf4',
@@ -894,9 +818,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 DIETARY (FOOD ADVICE &amp; RESTRICTIONS)
               </span>
               <span style={{ fontSize: '10.5px', color: '#059669', marginRight: '4px' }}>
-                {editingCaseId
-                  ? '(What to Eat & What NOT to Eat)'
-                  : '(What to Eat & What NOT to Eat - delete or add food items freely)'}
+                (What to Eat &amp; What NOT to Eat - delete or add food items freely)
               </span>
               <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginLeft: 'auto' }}>
                 {Object.keys(DIET_TEMPLATES).map(key => (
@@ -944,7 +866,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             <textarea
               className="cms-input"
               style={{ width: '100%', minHeight: '48px', resize: 'vertical', fontSize: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', boxSizing: 'border-box' }}
-              placeholder={editingCaseId ? "e.g. DB, BP, ACID, THYROID (type shortcut to insert & edit advice)..." : "e.g. DB, BP, ACID, THYROID (type shortcut to suggest, insert and edit advice)..."}
+              placeholder="e.g. DB, BP, ACID, THYROID (type shortcut to suggest, insert and edit advice)..."
               value={dietary}
               onChange={e => setDietary(e.target.value)}
             />
@@ -952,7 +874,6 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
 
           {/* ── TREATMENT + PRESCRIPTION SIDE-BY-SIDE ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-
             {/* TREATMENT (CLINIC) */}
             <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -997,11 +918,11 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               </div>
             </div>
 
-            {/* PRESCRIPTION (STORE) */}
+            {/* PRESCRIPTION (MEDICAL STORE) */}
             <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '8px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
-                  {editingCaseId ? 'PRESCRIPTION (STORE)' : 'PRESCRIPTION (MEDICAL STORE)'}
+                  PRESCRIPTION (MEDICAL STORE)
                 </span>
                 <button
                   type="button"
@@ -1023,37 +944,21 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                       onChange={e => handlePrescriptionChange(i, 'name', e.target.value)}
                       list="medicines-options"
                     />
-                    {/* doses: mor, noon, eve, ngt */}
                     {['mor','noon','eve','ngt'].map(field => (
                       <input key={field} type="text" className="cms-input"
                         style={{ width: '22px', height: '30px', textAlign: 'center', fontSize: '12px', padding: '0 1px', background: '#fff' }}
                         value={rx[field]} onChange={e => handlePrescriptionChange(i, field, e.target.value)} />
                     ))}
-
-                    {/* Timing: Select in Editing Mode, Radio in New Visit Mode */}
-                    {editingCaseId ? (
-                      <select
-                        className="cms-input"
-                        style={{ height: '30px', fontSize: '11.5px', padding: '0 4px', background: '#fff', fontWeight: 700, minWidth: '46px' }}
-                        value={rx.timing || 'AF'}
-                        onChange={e => handlePrescriptionChange(i, 'timing', e.target.value)}
-                      >
-                        <option value="AF">AF</option>
-                        <option value="BF">BF</option>
-                      </select>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                          <input type="radio" name={`timing-${i}`} value="BF" checked={rx.timing === 'BF'} onChange={() => handlePrescriptionChange(i, 'timing', 'BF')} />
-                          BF
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                          <input type="radio" name={`timing-${i}`} value="AF" checked={rx.timing === 'AF'} onChange={() => handlePrescriptionChange(i, 'timing', 'AF')} />
-                          AF
-                        </label>
-                      </div>
-                    )}
-
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <input type="radio" name={`timing-${i}`} value="BF" checked={rx.timing === 'BF'} onChange={() => handlePrescriptionChange(i, 'timing', 'BF')} />
+                        BF
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <input type="radio" name={`timing-${i}`} value="AF" checked={rx.timing === 'AF'} onChange={() => handlePrescriptionChange(i, 'timing', 'AF')} />
+                        AF
+                      </label>
+                    </div>
                     <button type="button" onClick={() => removePrescription(i)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}>
                       ×
@@ -1088,80 +993,28 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             <span style={{ fontSize: '13px', fontWeight: 800, color: due > 0 ? '#dc2626' : 'var(--text)' }}>
               DUE: ₹{due}
             </span>
-
-            {/* Bottom Actions */}
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-              {editingCaseId ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteVisit(editingCaseId)}
-                    style={{
-                      background: '#dc2626', color: '#fff', border: 'none',
-                      borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                  >
-                    <i className="fa-solid fa-trash" /> Delete Case
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetVisitForm}
-                    style={{
-                      background: '#fff', color: 'var(--text)', border: '1px solid #cbd5e1',
-                      borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSaveVisit(true)}
-                    style={{
-                      background: '#0284c7', color: '#fff', border: 'none',
-                      borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                  >
-                    <i className="fa-solid fa-print" /> Save &amp; Print
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSaveVisit(false)}
-                    style={{
-                      background: '#047857', color: '#fff', border: 'none',
-                      borderRadius: '6px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                  >
-                    <i className="fa-solid fa-check" /> Save Changes
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={resetVisitForm}
-                    style={{
-                      background: '#fff', color: 'var(--text)', border: '1px solid #cbd5e1',
-                      borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSaveVisit(true)}
-                    style={{
-                      background: '#047857', color: '#fff', border: 'none',
-                      borderRadius: '6px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                  >
-                    <i className="fa-solid fa-print" /> Save &amp; Print
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={resetVisitForm}
+                style={{
+                  background: '#fff', color: 'var(--text)', border: '1px solid #cbd5e1',
+                  borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveVisit(true)}
+                style={{
+                  background: '#047857', color: '#fff', border: 'none',
+                  borderRadius: '6px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <i className="fa-solid fa-print" /> Save &amp; Print
+              </button>
             </div>
           </div>
         </div>
@@ -1210,133 +1063,487 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {historyVisits.map((v, idx) => (
-              <div
-                key={`${v.caseId}-${idx}`}
-                style={{
-                  border: '1px solid #cbd5e1', borderRadius: '10px',
-                  padding: '12px 16px', background: '#fff',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                }}
-              >
-                {/* Top row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
-                      {fmtDate(v.date)} {v.time || '09:30 AM'}
-                    </span>
-                    <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                      BP: {v.bp || '130/85'}
-                    </span>
-                    <span style={{ background: '#fce7f3', color: '#9d174d', border: '1px solid #fbcfe8', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                      Ref: {v.reference || 'Dr. Shah'}
-                    </span>
-                    <span style={{ background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                      Complaint: {v.complaint || 'High fever, body chills and shivering for 2 days'}
-                    </span>
-                    <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                      Sugar: {v.sugar || 110}
-                    </span>
+            {historyVisits.map((v, idx) => {
+              const isFullCase = (hoveredCaseId === v.caseId || expandedCaseId === v.caseId || editingCaseId === v.caseId);
+
+              if (isFullCase) {
+                return (
+                  <div
+                    key={`${v.caseId}-${idx}`}
+                    onMouseEnter={() => setHoveredCaseId(v.caseId)}
+                    onMouseLeave={() => setHoveredCaseId(null)}
+                    style={{
+                      border: '1.5px solid #10b981', borderRadius: '10px',
+                      padding: '16px 18px', background: '#fff',
+                      boxShadow: '0 4px 15px rgba(16,185,129,0.08)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>
+                        Editing Visit #1 — Case {v.caseId || '00012026000101'}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowLabModal(true)}
+                          style={{
+                            background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
+                            padding: '4px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                          }}
+                        >
+                          <i className="fa-regular fa-file-lines" /> Attach Report
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setHoveredCaseId(null); setExpandedCaseId(null); setEditingCaseId(null); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1 }}
+                          title="Collapse"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 7 Columns Vitals */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '120px 80px 80px 90px 110px 1.2fr 1.8fr',
+                      gap: '8px', marginBottom: '14px',
+                    }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>DATE</label>
+                        <input type="date" className="cms-input" style={{ height: '30px', fontSize: '11.5px', padding: '0 6px' }}
+                          value={editingCaseId === v.caseId ? visitDate : (v.date || todayISO())}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setVisitDate(e.target.value); }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>BP</label>
+                        <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="130/85"
+                          value={editingCaseId === v.caseId ? bp : (v.bp || '130/85')}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setBp(e.target.value); }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>SUGAR</label>
+                        <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="110"
+                          value={editingCaseId === v.caseId ? sugar : (v.sugar || '110')}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setSugar(e.target.value); }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER</label>
+                        <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
+                          value={editingCaseId === v.caseId ? other : (v.otherVitals || '')}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setOther(e.target.value); }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>REFERENCE</label>
+                        <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="Dr. Shah"
+                          value={editingCaseId === v.caseId ? reference : (v.reference || 'Dr. Shah')}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setReference(e.target.value); }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>INVESTIGATION</label>
+                        <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
+                          placeholder="e.g. CBC..."
+                          value={editingCaseId === v.caseId ? investigation : (v.investigation || 'e.g. CBC...')}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setInvestigation(e.target.value); }}
+                          list="investigations-list" />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>COMPLAINT</label>
+                        <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
+                          placeholder="High fever, body chills and shivering for 2 da"
+                          value={editingCaseId === v.caseId ? complaint : (v.complaint || 'High fever, body chills and shivering for 2 da')}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setComplaint(e.target.value); }}
+                          list="complaints-list" />
+                      </div>
+                    </div>
+
+                    {/* Dietary Box */}
+                    <div style={{
+                      border: '1px solid #86efac', borderRadius: '8px',
+                      padding: '10px 14px', marginBottom: '14px', background: '#f0fdf4',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#047857' }}>
+                          <i className="fa-solid fa-utensils" style={{ marginRight: '5px' }} />
+                          DIETARY (FOOD ADVICE &amp; RESTRICTIONS)
+                        </span>
+                        <span style={{ fontSize: '10.5px', color: '#059669', marginRight: '4px' }}>
+                          (What to Eat &amp; What NOT to Eat)
+                        </span>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+                          {Object.keys(DIET_TEMPLATES).map(key => (
+                            <div key={key} style={{ position: 'relative' }}>
+                              <button
+                                type="button"
+                                onMouseEnter={() => setHoveredDietKey(key)}
+                                onMouseLeave={() => setHoveredDietKey(null)}
+                                onClick={() => {
+                                  if (editingCaseId !== v.caseId) handleEditVisit(v);
+                                  const text = DIET_TEMPLATES[key];
+                                  setDietary(prev => prev ? prev + '\n' + text : text);
+                                }}
+                                style={{
+                                  background: '#fff', color: '#047857', border: '1px solid #86efac',
+                                  borderRadius: '5px', padding: '2px 7px', fontSize: '11px',
+                                  fontWeight: 700, cursor: 'pointer',
+                                }}
+                              >
+                                +{key}
+                              </button>
+                              {hoveredDietKey === key && (
+                                <div style={{
+                                  position: 'absolute', bottom: '115%', left: '50%', transform: 'translateX(-50%)',
+                                  background: '#1e293b', color: '#fff', borderRadius: '5px', padding: '4px 9px',
+                                  fontSize: '11px', whiteSpace: 'nowrap', zIndex: 100, pointerEvents: 'none',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.25)', fontWeight: 600,
+                                }}>
+                                  {DIET_TOOLTIPS[key]}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            style={{
+                              background: '#fff', color: '#047857', border: '1px solid #6ee7b7',
+                              borderRadius: '5px', padding: '2px 7px', fontSize: '11px',
+                              fontWeight: 700, cursor: 'pointer',
+                            }}
+                          >
+                            + Add Template
+                          </button>
+                        </div>
+                      </div>
+                      <textarea
+                        className="cms-input"
+                        style={{ width: '100%', minHeight: '48px', resize: 'vertical', fontSize: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', boxSizing: 'border-box' }}
+                        placeholder="e.g. DB, BP, ACID, THYROID (type shortcut to insert & edit advice)..."
+                        value={editingCaseId === v.caseId ? dietary : (v.dietary || '')}
+                        onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setDietary(e.target.value); }}
+                      />
+                    </div>
+
+                    {/* 2 Columns: Treatment (Clinic) & Prescription (Store) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      {/* Treatment */}
+                      <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '8px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>
+                            TREATMENT (CLINIC)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editingCaseId !== v.caseId) handleEditVisit(v);
+                              setTreatment([...treatment, { name: '', qty: '1', cost: 0 }]);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#dc2626', fontWeight: 700, cursor: 'pointer', fontSize: '11.5px' }}
+                          >
+                            + Add
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {(editingCaseId === v.caseId ? treatment : (v.treatment?.length ? v.treatment : [{ name: 'Clinical Consultation', qty: '1' }, { name: 'Injection Paracetamol IM', qty: '1' }])).map((t, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="cms-input"
+                                style={{ flex: 1, height: '30px', fontSize: '12px', background: '#fff' }}
+                                value={t.name}
+                                onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handleTreatmentChange(i, 'name', e.target.value); }}
+                              />
+                              <input
+                                type="text"
+                                className="cms-input"
+                                style={{ width: '38px', height: '30px', textAlign: 'center', fontSize: '12px', padding: '0 4px', background: '#fff' }}
+                                value={t.qty}
+                                onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handleTreatmentChange(i, 'qty', e.target.value); }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => { if (editingCaseId !== v.caseId) handleEditVisit(v); removeTreatment(i); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Prescription */}
+                      <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '8px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
+                            PRESCRIPTION (STORE)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editingCaseId !== v.caseId) handleEditVisit(v);
+                              setPrescription([...prescription, { name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }]);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', fontSize: '11.5px' }}
+                          >
+                            + Add
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {(editingCaseId === v.caseId ? prescription : (v.prescription?.length ? v.prescription : [{ name: 'Paracetamol 650mg', qty: '1', mor: '1', noon: '1', eve: '1', ngt: '0', timing: 'AF' }, { name: 'Pantoprazole 40mg', qty: '1', mor: '1', noon: '0', eve: '0', ngt: '0', timing: 'BF' }])).map((rx, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="cms-input"
+                                style={{ flex: 1, height: '30px', fontSize: '12px', background: '#fff' }}
+                                value={rx.name}
+                                onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handlePrescriptionChange(i, 'name', e.target.value); }}
+                                list="medicines-options"
+                              />
+                              {['mor','noon','eve','ngt'].map(field => (
+                                <input key={field} type="text" className="cms-input"
+                                  style={{ width: '22px', height: '30px', textAlign: 'center', fontSize: '12px', padding: '0 1px', background: '#fff' }}
+                                  value={rx[field] || '0'}
+                                  onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handlePrescriptionChange(i, field, e.target.value); }} />
+                              ))}
+                              <select
+                                className="cms-input"
+                                style={{ height: '30px', fontSize: '11.5px', padding: '0 4px', background: '#fff', fontWeight: 700, minWidth: '46px' }}
+                                value={rx.timing || 'AF'}
+                                onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handlePrescriptionChange(i, 'timing', e.target.value); }}
+                              >
+                                <option value="AF">AF</option>
+                                <option value="BF">BF</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => { if (editingCaseId !== v.caseId) handleEditVisit(v); removePrescription(i); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Bar */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
+                      borderTop: '1px solid var(--border)', paddingTop: '12px',
+                    }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
+                        CHARGE ₹ {editingCaseId === v.caseId ? charge : (v.charge || 600)}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>PAID ₹</span>
+                        <input
+                          type="number"
+                          className="cms-input font-mono"
+                          style={{ width: '70px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
+                          value={editingCaseId === v.caseId ? received : (v.received || 600)}
+                          onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handleReceivedChange(e.target.value); }}
+                        />
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: (editingCaseId === v.caseId ? due : (v.due || 0)) > 0 ? '#dc2626' : 'var(--text)' }}>
+                        DUE: ₹{editingCaseId === v.caseId ? due : (v.due || 0)}
+                      </span>
+
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVisit(v.caseId)}
+                          style={{
+                            background: '#dc2626', color: '#fff', border: 'none',
+                            borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px'
+                          }}
+                        >
+                          <i className="fa-solid fa-trash" /> Delete Case
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setHoveredCaseId(null); setExpandedCaseId(null); setEditingCaseId(null); }}
+                          style={{
+                            background: '#fff', color: 'var(--text)', border: '1px solid #cbd5e1',
+                            borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingCaseId !== v.caseId) handleEditVisit(v);
+                            handleSaveVisit(true);
+                          }}
+                          style={{
+                            background: '#0284c7', color: '#fff', border: 'none',
+                            borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px'
+                          }}
+                        >
+                          <i className="fa-solid fa-print" /> Save &amp; Print
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingCaseId !== v.caseId) handleEditVisit(v);
+                            handleSaveVisit(false);
+                            setExpandedCaseId(null);
+                            setHoveredCaseId(null);
+                          }}
+                          style={{
+                            background: '#047857', color: '#fff', border: 'none',
+                            borderRadius: '6px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px'
+                          }}
+                        >
+                          <i className="fa-solid fa-check" /> Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              /* ── COMPACT SUMMARY CARD (Default, Photo 2) ── */
+              return (
+                <div
+                  key={`${v.caseId}-${idx}`}
+                  onMouseEnter={() => setHoveredCaseId(v.caseId)}
+                  onMouseLeave={() => setHoveredCaseId(null)}
+                  style={{
+                    border: '1px solid #cbd5e1', borderRadius: '10px',
+                    padding: '12px 16px', background: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => handleEditVisit(v)}
+                >
+                  {/* Top row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
+                        {fmtDate(v.date)} {v.time || '09:30 AM'}
+                      </span>
+                      <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                        BP: {v.bp || '130/85'}
+                      </span>
+                      <span style={{ background: '#fce7f3', color: '#9d174d', border: '1px solid #fbcfe8', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                        Ref: {v.reference || 'Dr. Shah'}
+                      </span>
+                      <span style={{ background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                        Complaint: {v.complaint || 'High fever, body chills and shivering for 2 days'}
+                      </span>
+                      <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                        Sugar: {v.sugar || 110}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setPrintingVisit(v); }}
+                        style={{
+                          background: '#fff', color: '#047857', border: '1px solid #86efac',
+                          borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                      >
+                        <i className="fa-solid fa-print" /> Print Rx
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleEditVisit(v); }}
+                        style={{
+                          background: '#fff', color: '#047857', border: '1px solid #86efac',
+                          borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                      >
+                        <i className="fa-solid fa-pen-to-square" /> Edit / View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteVisit(v.caseId); }}
+                        style={{
+                          background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5',
+                          borderRadius: '6px', padding: '3px 7px', fontSize: '11.5px', cursor: 'pointer',
+                        }}
+                        title="Delete visit"
+                      >
+                        <i className="fa-solid fa-trash" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setPrintingVisit(v)}
-                      style={{
-                        background: '#fff', color: '#047857', border: '1px solid #86efac',
-                        borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '4px'
-                      }}
-                    >
-                      <i className="fa-solid fa-print" /> Print Rx
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEditVisit(v)}
-                      style={{
-                        background: '#fff', color: '#047857', border: '1px solid #86efac',
-                        borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '4px'
-                      }}
-                    >
-                      <i className="fa-solid fa-pen-to-square" /> Edit / View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteVisit(v.caseId)}
-                      style={{
-                        background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5',
-                        borderRadius: '6px', padding: '3px 7px', fontSize: '11.5px', cursor: 'pointer',
-                      }}
-                      title="Delete visit"
-                    >
-                      <i className="fa-solid fa-trash" />
-                    </button>
+                  {/* Bottom row: Two colored boxes side-by-side */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {/* Left box: TREATMENT / CLINIC */}
+                    <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '6px', padding: '8px 12px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#e11d48', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        TREATMENT / CLINIC:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {(v.treatment && v.treatment.length > 0 && v.treatment[0].name) ? (
+                          v.treatment.map((t, ti) => (
+                            <span key={ti} style={{
+                              background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px',
+                              padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b'
+                            }}>
+                              {t.name}
+                            </span>
+                          ))
+                        ) : (
+                          <>
+                            <span style={{ background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
+                              Clinical Consultation
+                            </span>
+                            <span style={{ background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
+                              Injection Paracetamol IM
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right box: PRESCRIPTION / MEDICAL STORE */}
+                    <div style={{ background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: '6px', padding: '8px 12px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        PRESCRIPTION / MEDICAL STORE:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {(v.prescription && v.prescription.length > 0 && v.prescription[0].name) ? (
+                          v.prescription.map((rx, ri) => (
+                            <span key={ri} style={{
+                              background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px',
+                              padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b'
+                            }}>
+                              {rx.name} ({rx.mor || 1}-{rx.noon || 0}-{rx.eve || 1}-{rx.ngt || 0}) {rx.timing || 'AF'}
+                            </span>
+                          ))
+                        ) : (
+                          <>
+                            <span style={{ background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
+                              Paracetamol 650mg (1-1-1-0) AF
+                            </span>
+                            <span style={{ background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
+                              Pantoprazole 40mg (1-0-0-0) BF
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Bottom row: Two colored boxes side-by-side */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  {/* Left box: TREATMENT / CLINIC */}
-                  <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '6px', padding: '8px 12px' }}>
-                    <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#e11d48', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      TREATMENT / CLINIC:
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {(v.treatment && v.treatment.length > 0 && v.treatment[0].name) ? (
-                        v.treatment.map((t, ti) => (
-                          <span key={ti} style={{
-                            background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px',
-                            padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b'
-                          }}>
-                            {t.name}
-                          </span>
-                        ))
-                      ) : (
-                        <>
-                          <span style={{ background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                            Clinical Consultation
-                          </span>
-                          <span style={{ background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                            Injection Paracetamol IM
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right box: PRESCRIPTION / MEDICAL STORE */}
-                  <div style={{ background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: '6px', padding: '8px 12px' }}>
-                    <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      PRESCRIPTION / MEDICAL STORE:
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {(v.prescription && v.prescription.length > 0 && v.prescription[0].name) ? (
-                        v.prescription.map((rx, ri) => (
-                          <span key={ri} style={{
-                            background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px',
-                            padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b'
-                          }}>
-                            {rx.name} ({rx.mor || 1}-{rx.noon || 0}-{rx.eve || 1}-{rx.ngt || 0}) {rx.timing || 'AF'}
-                          </span>
-                        ))
-                      ) : (
-                        <>
-                          <span style={{ background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                            Paracetamol 650mg (1-1-1-0) AF
-                          </span>
-                          <span style={{ background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                            Pantoprazole 40mg (1-0-0-0) BF
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
