@@ -142,7 +142,7 @@ export default function DashboardView({ onNavigate }) {
 
   const TABS = [
     { key: 'opd', label: 'OPD Consultations', icon: 'fa-stethoscope' },
-    { key: 'followups', label: 'Follow-ups', icon: 'fa-bell' },
+    // { key: 'followups', label: 'Follow-ups', icon: 'fa-bell' },
     { key: 'invoices', label: 'Invoices & Receipts', icon: 'fa-file-invoice' },
     { key: 'patients', label: 'Patient Directory', icon: 'fa-users' },
     { key: 'dues', label: 'Dues Recovery', icon: 'fa-triangle-exclamation' },
@@ -414,7 +414,7 @@ export default function DashboardView({ onNavigate }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
             {activeTab === 'opd' && `OPD Consultations (${DATE_OPTS.find(d => d.key === dateRange)?.label || 'Today'})`}
-            {activeTab === 'followups' && 'Upcoming Follow-ups'}
+            {/* {activeTab === 'followups' && 'Upcoming Follow-ups'} */}
             {activeTab === 'invoices' && 'Invoices & Receipts'}
             {activeTab === 'patients' && 'Patient Directory'}
             {activeTab === 'dues' && 'Dues Recovery'}
@@ -516,7 +516,7 @@ export default function DashboardView({ onNavigate }) {
           </div>
         )}
 
-        {/* Tab 2: Follow-ups */}
+        {/* Tab 2: Follow-ups
         {activeTab === 'followups' && (
           <div className="cms-table-responsive">
             <table className="cms-table">
@@ -546,7 +546,7 @@ export default function DashboardView({ onNavigate }) {
               </tbody>
             </table>
           </div>
-        )}
+        )} */}
 
         {/* Tab 3: Invoices */}
         {activeTab === 'invoices' && (
