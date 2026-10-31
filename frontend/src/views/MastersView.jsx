@@ -285,8 +285,10 @@ export default function MastersView() {
       setDietaryItems(updated);
       try {
         await apiFetch('/masters/dietary', { method: 'POST', body: { items: updated } });
+        showToast(editingItem ? `Updated dietary template +${formCode.trim().toUpperCase()}` : `Added dietary shortcut +${formCode.trim().toUpperCase()}`);
+        loadAllCounts();
       } catch (err) {
-        console.warn(err);
+        showToast(err.message || 'Failed to save to database', 'error');
       }
     } else {
       let updated;
@@ -298,7 +300,6 @@ export default function MastersView() {
           city: formCity.trim() || item.city,
           area: formArea.trim() || item.area,
         } : item);
-        showToast(`Updated ${formName || editingItem.name}`);
       } else {
         const newItem = {
           id: `${activeTab}_${uid()}`,
@@ -309,13 +310,14 @@ export default function MastersView() {
           createdAt: '01/01/2026',
         };
         updated = [...genericItems, newItem];
-        showToast(`Added ${newItem.name || newItem.code}`);
       }
       setGenericItems(updated);
       try {
         await apiFetch(`/masters/${activeTab}`, { method: 'POST', body: { items: updated } });
+        showToast(editingItem ? `Updated ${formName || editingItem.name}` : `Added ${formName}`);
+        loadAllCounts();
       } catch (err) {
-        console.warn(err);
+        showToast(err.message || 'Failed to save to database', 'error');
       }
     }
 
@@ -329,10 +331,11 @@ export default function MastersView() {
     setDietaryItems(updated);
     try {
       await apiFetch('/masters/dietary', { method: 'POST', body: { items: updated } });
+      showToast('Dietary template removed from database.');
+      loadAllCounts();
     } catch (err) {
-      console.warn(err);
+      showToast(err.message || 'Failed to delete from database', 'error');
     }
-    showToast('Dietary template removed from database.');
   };
 
   const handleDeleteGeneric = async (id) => {
@@ -341,10 +344,11 @@ export default function MastersView() {
     setGenericItems(updated);
     try {
       await apiFetch(`/masters/${activeTab}`, { method: 'POST', body: { items: updated } });
+      showToast('Entry removed from database.');
+      loadAllCounts();
     } catch (err) {
-      console.warn(err);
+      showToast(err.message || 'Failed to delete from database', 'error');
     }
-    showToast('Entry removed from database.');
   };
 
   const currentTabInfo = MASTER_TABS.find(t => t.key === activeTab) || MASTER_TABS[0];

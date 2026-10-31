@@ -35,6 +35,7 @@ const ConsultationSchema = new mongoose.Schema(
     complaint: { type: String, default: '' },
     diagnosis: { type: String, default: '' },
     investigation: { type: String, default: '' },
+    dietary: { type: String, default: '' },
     treatment: [TreatmentItemSchema],
     prescription: [PrescriptionItemSchema],
     charge: { type: Number, default: 0 },

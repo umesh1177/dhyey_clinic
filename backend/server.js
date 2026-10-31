@@ -847,16 +847,23 @@ app.get(['/api/families/:id', '/api/family/:id'], authMiddleware, async (req, re
     const { id } = req.params;
     const clinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'demo';
 
-    const family = await Family.findOne({ famId: id, clinicId });
+    let family = await Family.findOne({ famId: id, clinicId });
+    if (!family) {
+      family = await Family.findOne({ famId: id });
+    }
     if (!family) {
       return res.status(404).json({ success: false, message: 'Family not found' });
     }
 
-    const patients = await Patient.find({ familyId: id, clinicId });
+    const patients = await Patient.find({ familyId: id });
+    const consultations = await Consultation.find({ familyId: id }).sort({ date: -1, time: -1 });
+
     const famObj = family.toObject();
     famObj.patients = {};
     patients.forEach((p) => {
-      famObj.patients[p.patId] = p;
+      const pObj = p.toObject();
+      pObj.visits = consultations.filter((c) => c.patientId === p.patId);
+      famObj.patients[p.patId] = pObj;
     });
 
     res.json({ success: true, data: famObj });
@@ -1149,8 +1156,12 @@ app.get(['/api/consultations', '/api/consultation'], authMiddleware, async (req,
     const clinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'demo';
     const { patientId, familyId, date } = req.query;
 
-    const query = { clinicId };
-    if (patientId) query.patientId = patientId;
+    const query = {};
+    if (patientId) {
+      query.patientId = patientId;
+    } else {
+      query.clinicId = clinicId;
+    }
     if (familyId) query.familyId = familyId;
     if (date) query.date = date;
 
@@ -1174,10 +1185,12 @@ app.post(['/api/consultations', '/api/consultation'], authMiddleware, async (req
       sugar,
       pulse,
       other,
+      otherVitals,
       reference,
       investigation,
       complaint,
       diagnosis,
+      dietary,
       treatment,
       prescription,
       charge,
@@ -1188,14 +1201,21 @@ app.post(['/api/consultations', '/api/consultation'], authMiddleware, async (req
       return res.status(400).json({ success: false, message: 'Family ID and Patient ID are required' });
     }
 
-    const patient = await Patient.findOne({ patId: patientId, clinicId });
+    let patient = await Patient.findOne({ patId: patientId, clinicId });
+    if (!patient) {
+      patient = await Patient.findOne({ patId: patientId });
+    }
+    if (!patient) {
+      patient = await Patient.findById(patientId).catch(() => null);
+    }
     if (!patient) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
 
-    const existingVisitsCount = await Consultation.countDocuments({ patientId, clinicId });
-    const visitNum = existingVisitsCount + 1;
-    const caseId = makeCaseId(familyId, patientId, visitNum);
+    const actualClinicId = patient.clinicId || clinicId || 'demo';
+    const existingVisitsCount = await Consultation.countDocuments({ patientId });
+    const visitNum = Number(req.body.visitNum) || existingVisitsCount + 1;
+    const caseId = req.body.caseId || makeCaseId(familyId, patientId, visitNum);
 
     const chargeNum = Number(charge || 0);
     const recNum = Number(received || 0);
@@ -1206,20 +1226,21 @@ app.post(['/api/consultations', '/api/consultation'], authMiddleware, async (req
       visitNum,
       patientId,
       familyId,
-      clinicId,
+      clinicId: actualClinicId,
       date: date || todayISO(),
       time: time || nowTime(),
-      weight: (weight || '').trim(),
-      bp: (bp || '').trim(),
-      sugar: (sugar || '').trim(),
-      pulse: (pulse || '').trim(),
-      other: (other || '').trim(),
-      reference: (reference || 'Self').trim(),
-      investigation: (investigation || '').trim(),
-      complaint: (complaint || '').trim(),
-      diagnosis: (diagnosis || '').trim(),
-      treatment: treatment || [],
-      prescription: prescription || [],
+      weight: String(weight || '').trim(),
+      bp: String(bp || '').trim(),
+      sugar: String(sugar || '').trim(),
+      pulse: String(pulse || '').trim(),
+      other: String(other || otherVitals || '').trim(),
+      reference: String(reference || 'Self').trim(),
+      investigation: String(investigation || '').trim(),
+      complaint: String(complaint || '').trim(),
+      diagnosis: String(diagnosis || '').trim(),
+      dietary: String(dietary || '').trim(),
+      treatment: (treatment || []).filter(t => t && t.name && String(t.name).trim()),
+      prescription: (prescription || []).filter(p => p && p.name && String(p.name).trim()),
       charge: chargeNum,
       received: recNum,
       due: dueNum,
@@ -2147,20 +2168,12 @@ app.get('/api/history/timeline/:patientId', authMiddleware, async (req, res) => 
 
 app.get(['/api/masters/all', '/api/master/all'], async (req, res) => {
   try {
-    const clinicId = req.headers['x-clinic-id'] || 'shared';
-    const types = Object.keys(DEFAULT_MASTERS);
+    const types = ['dietary', 'complaints', 'investigations', 'areas', 'medicines', 'allergies', 'relations', 'societies', 'navigation'];
     const result = {};
 
     for (const t of types) {
-      let doc = await MasterData.findOne({ clinicId, type: t });
-      if (!doc && clinicId !== 'shared') {
-        doc = await MasterData.findOne({ clinicId: 'shared', type: t });
-      }
-      if (!doc) {
-        doc = new MasterData({ clinicId: 'shared', type: t, items: DEFAULT_MASTERS[t] });
-        await doc.save().catch(() => {});
-      }
-      result[t] = doc.items;
+      let doc = await MasterData.findOne({ type: t });
+      result[t] = doc ? doc.items : [];
     }
 
     res.json({ success: true, data: result });
@@ -2172,20 +2185,9 @@ app.get(['/api/masters/all', '/api/master/all'], async (req, res) => {
 app.get(['/api/masters/:type', '/api/master/:type'], async (req, res) => {
   try {
     const { type } = req.params;
-    const clinicId = req.headers['x-clinic-id'] || 'shared';
-
-    let doc = await MasterData.findOne({ clinicId, type });
-    if (!doc && clinicId !== 'shared') {
-      doc = await MasterData.findOne({ clinicId: 'shared', type });
-    }
-
-    if (!doc) {
-      const initialItems = DEFAULT_MASTERS[type] || [];
-      doc = new MasterData({ clinicId: 'shared', type, items: initialItems });
-      await doc.save().catch(() => {});
-    }
-
-    res.json({ success: true, count: Array.isArray(doc.items) ? doc.items.length : 1, data: doc.items });
+    let doc = await MasterData.findOne({ type });
+    const items = doc ? doc.items : [];
+    res.json({ success: true, count: Array.isArray(items) ? items.length : 0, data: items });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2195,15 +2197,14 @@ app.post(['/api/masters/:type', '/api/master/:type'], authMiddleware, async (req
   try {
     const { type } = req.params;
     const { items } = req.body;
-    const clinicId = req.headers['x-clinic-id'] || 'shared';
 
     if (items === undefined) {
       return res.status(400).json({ success: false, message: 'items payload is required' });
     }
 
     const updated = await MasterData.findOneAndUpdate(
-      { clinicId, type },
-      { items },
+      { type },
+      { clinicId: 'shared', type, items },
       { new: true, upsert: true }
     );
 

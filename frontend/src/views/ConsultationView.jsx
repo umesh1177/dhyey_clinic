@@ -148,11 +148,17 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   const loadPatientData = async () => {
     if (!familyId || !patientId) { setActivePatient(null); setActiveFamily(null); return; }
     try {
-      const res = await apiFetch(`/families/${familyId}`);
-      const fam = res.data;
+      const [famRes, visitsRes] = await Promise.all([
+        apiFetch(`/families/${familyId}`),
+        apiFetch(`/consultations?patientId=${patientId}`).catch(() => ({ data: [] }))
+      ]);
+      const fam = famRes.data;
       const pat = fam?.patients?.[patientId] || Object.values(fam?.patients || {}).find(p => (p.id || p.patId) === patientId);
+      if (pat) {
+        pat.visits = (visitsRes?.data && visitsRes.data.length > 0) ? visitsRes.data : (pat.visits || []);
+      }
       setActiveFamily(fam || null);
-      setActivePatient(pat || null);
+      setActivePatient(pat ? { ...pat } : null);
     } catch (err) {
       console.error(err);
     }
