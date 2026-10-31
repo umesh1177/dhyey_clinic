@@ -10,6 +10,9 @@ import {
   getSharedMasterCollection,
   addSharedMasterItem,
   makeCaseId,
+  fetchMasterCollectionFromDB,
+  expandShortcut,
+  findMasterMatch,
 } from '../services/api';
 import PrescriptionModal from '../components/PrescriptionModal';
 import LabReportModal from '../components/LabReportModal';

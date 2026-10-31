@@ -5,7 +5,7 @@ const FamilySchema = new mongoose.Schema(
     famId: { type: String, required: true, index: true },
     headName: { type: String, required: true, trim: true },
     society: { type: String, default: '', trim: true },
-    registeredBy: { type: String, enum: ['Self', 'Family Member', ''], default: 'Self' },
+    registeredBy: { type: String, default: 'Self', trim: true },
     area: { type: String, default: '', trim: true },
     phone: { type: String, default: '', trim: true },
     year: { type: Number, default: () => new Date().getFullYear() },
