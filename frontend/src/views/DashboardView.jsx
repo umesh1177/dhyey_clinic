@@ -141,90 +141,91 @@ export default function DashboardView({ onNavigate }) {
   return (
     <div className="cms-page-container" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
       
-      {/* ── ROW 1: Title Bar with Date Filters & Date Display ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      {/* ── Top Bar Container matching Screenshot 1 ── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px',
+        padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '12px'
+      }}>
+        {/* Left side: Clinical Dashboard + Date Filters + Date Display */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '50%',
-              background: 'rgba(9,92,84,0.1)', color: 'var(--primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px'
-            }}>
-              <i className="fa-solid fa-chart-pie" />
-            </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+            <i className="fa-solid fa-chart-pie" style={{ color: 'var(--primary)', fontSize: '16px' }} />
+            <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>
               Clinical Dashboard
-            </h2>
+            </span>
           </div>
 
           {/* Date Range Filter Pills */}
-          <div style={{ display: 'flex', gap: '6px', marginLeft: '6px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--surface-alt)', padding: '3px 4px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             {DATE_OPTS.map((d) => (
               <button
                 key={d.key}
                 type="button"
                 onClick={() => setDateRange(d.key)}
                 style={{
-                  padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                  background: dateRange === d.key ? 'var(--primary)' : 'var(--surface-alt)',
-                  color: dateRange === d.key ? '#fff' : 'var(--text-muted)',
-                  border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.15s'
+                  padding: '4px 14px', borderRadius: '16px', fontSize: '12px', fontWeight: 600,
+                  background: dateRange === d.key ? 'var(--surface)' : 'transparent',
+                  color: dateRange === d.key ? 'var(--primary)' : 'var(--text-muted)',
+                  border: 'none',
+                  boxShadow: dateRange === d.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  cursor: 'pointer', transition: 'all 0.15s'
                 }}
               >
                 {d.label}
               </button>
             ))}
           </div>
+
+          {/* Date Display Box */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: '20px', padding: '5px 14px', fontSize: '12.5px', fontWeight: 700, color: 'var(--text)'
+          }}>
+            <span>31-10-2026</span>
+            <i className="fa-regular fa-calendar" style={{ color: 'var(--text-muted)', fontSize: '12px' }} />
+          </div>
         </div>
 
-        {/* Date Display Pill */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '8px', padding: '6px 12px', fontSize: '13px', fontWeight: 700, color: 'var(--text)'
-        }}>
-          <span>{todayLabel()}</span>
-          <i className="fa-regular fa-calendar" style={{ color: 'var(--text-muted)' }} />
+        {/* Right side: Action Buttons */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="cms-btn cms-btn-primary"
+            onClick={() => onNavigate('case')}
+            style={{ fontSize: '12.5px', padding: '7px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
+          >
+            <i className="fa-regular fa-square-plus" /> + New Consultation
+            <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '10.5px', fontWeight: 800 }}>F3</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('patient')}
+            style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
+              borderRadius: '20px', padding: '7px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-user-plus" style={{ color: 'var(--text-muted)' }} /> Add Patient
+            <span style={{ background: 'var(--surface-alt)', borderRadius: '4px', padding: '1px 5px', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)' }}>F2</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('family')}
+            style={{
+              background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
+              borderRadius: '20px', padding: '7px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-people-roof" style={{ color: 'var(--text-muted)' }} /> Family Head
+            <span style={{ background: 'var(--surface-alt)', borderRadius: '4px', padding: '1px 5px', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-muted)' }}>F1</span>
+          </button>
         </div>
-      </div>
-
-      {/* ── ROW 2: Quick Action Buttons ── */}
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          className="cms-btn cms-btn-primary"
-          onClick={() => onNavigate('case')}
-          style={{ fontSize: '13px', padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
-        >
-          <i className="fa-solid fa-plus" /> New Consultation
-          <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', fontWeight: 800 }}>F3</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onNavigate('patient')}
-          style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
-            borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '6px'
-          }}
-        >
-          <i className="fa-solid fa-user-plus" style={{ color: 'var(--text-muted)' }} /> Add Patient
-          <span style={{ background: 'var(--surface-alt)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>F2</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onNavigate('family')}
-          style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
-            borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '6px'
-          }}
-        >
-          <i className="fa-solid fa-people-roof" style={{ color: 'var(--text-muted)' }} /> Family Head
-          <span style={{ background: 'var(--surface-alt)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>F1</span>
-        </button>
       </div>
 
       {/* ── ROW 3: 4 KPI Cards (Exactly as in screenshot 1) ── */}

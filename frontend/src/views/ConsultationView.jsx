@@ -376,59 +376,67 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             ))}
           </div>
         ) : (
-          /* Empty state */
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '50px 20px', textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '50%',
-              background: 'rgba(9,92,84,0.08)', color: 'var(--primary)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '28px', marginBottom: '16px',
-            }}>
-              <i className="fa-solid fa-user-group" />
-            </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 8px', color: 'var(--text)' }}>
-              Search Patient to Open Case Record
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
-              Type patient name, 8-digit Patient ID, Family Head name, or Area in the search bar above to start clinical consultation and review case history.
-            </p>
-          </div>
-        )}
-
-        {/* Recent patients */}
-        {!searchQuery && recents.length > 0 && (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Recent Patients in Clinic (Click to open record):
-            </div>
-            {recents.map((r, i) => (
-              <div
-                key={`rec-${r.patientId}-${i}`}
-                onClick={() => { setFamilyId(r.familyId); setPatientId(r.patientId); }}
-                style={{
-                  padding: '14px 18px', borderBottom: i < recents.length - 1 ? '1px solid var(--border)' : 'none',
-                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-alt)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text)' }}>
-                    {r.patientName}
-                    {r.relation && <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 500, marginLeft: '6px' }}>({r.relation})</span>}
-                  </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {r.headName} · FAM {r.famId} · {r.area || ''}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="font-mono" style={{ background: 'var(--primary)', color: '#fff', borderRadius: '6px', padding: '3px 10px', fontSize: '12px', fontWeight: 700 }}>
-                    PT {r.patientId}
-                  </span>
-                  <i className="fa-solid fa-arrow-right" style={{ color: 'var(--text-muted)' }} />
-                </div>
+          /* Unified Card matching Screenshot 3 */
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '36px 32px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '50%',
+                background: '#e6f7f2', color: 'var(--primary)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '24px', marginBottom: '14px',
+              }}>
+                <i className="fa-solid fa-address-card" />
               </div>
-            ))}
+              <h2 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 6px', color: 'var(--text)' }}>
+                Search Patient to Open Case Record
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '520px', margin: '0 auto', lineHeight: 1.4 }}>
+                Type patient name, 8-digit Patient ID, Family Head name, or Area in the search bar above to start clinical consultation and review case history.
+              </p>
+            </div>
+
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>
+              RECENT PATIENTS IN CLINIC (CLICK TO OPEN RECORD):
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {recents.slice(0, 5).map((r, i) => (
+                <div
+                  key={`rec-${r.patientId}-${i}`}
+                  onClick={() => { setFamilyId(r.familyId); setPatientId(r.patientId); }}
+                  style={{
+                    border: '1px solid var(--border)', borderRadius: '8px',
+                    padding: '12px 16px', background: 'var(--surface)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    cursor: 'pointer', transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--primary)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text)', marginBottom: '2px' }}>
+                      {r.patientName} {r.relation ? <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>({r.relation})</span> : ''}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                      {r.headName} · FAM {r.famId} · {r.area || ''}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: 'var(--primary)',
+                    border: '1px solid rgba(9,92,84,0.25)', borderRadius: '6px', padding: '4px 10px', background: 'rgba(9,92,84,0.04)',
+                    display: 'flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    PT {r.patientId} →
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

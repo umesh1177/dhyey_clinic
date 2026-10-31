@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   getLocalDB,
@@ -11,9 +11,9 @@ import {
 } from '../services/api';
 
 const DEFAULT_TEMPLATES = [
-  { key: 'fitness', label: 'Medical Fitness Certificate (Fitness)' },
-  { key: 'leave', label: 'Medical Sick Leave Certificate (Leave)' },
-  { key: 'unfit', label: 'Medical Unfitness Certificate' },
+  { key: 'fitness', label: 'Medical Fitness Certificate (Fitness)', heading: 'MEDICAL FITNESS CERTIFICATE', body: 'This is to certify that {PATIENT_NAME}, aged {AGE}, has been examined by me. The patient has clinically recovered from {DIAGNOSIS} and is now found medically fit in all respects to resume normal daily duties.' },
+  { key: 'leave', label: 'Medical Sick Leave Certificate (Leave)', heading: 'MEDICAL SICK LEAVE CERTIFICATE', body: 'This is to certify that {PATIENT_NAME}, aged {AGE}, is suffering from {DIAGNOSIS} and has been advised complete rest for {REST_DAYS} days from {FROM_DATE} to {TO_DATE}.' },
+  { key: 'unfit', label: 'Medical Unfitness Certificate', heading: 'MEDICAL UNFITNESS CERTIFICATE', body: 'This is to certify that {PATIENT_NAME}, aged {AGE}, has been examined and is found temporarily unfit for duties due to {DIAGNOSIS}.' },
 ];
 
 export default function CertificatesView() {
@@ -22,6 +22,26 @@ export default function CertificatesView() {
 
   const [certificates, setCertificates] = useState([]);
   const [certTemplate, setCertTemplate] = useState('fitness');
+  const [templates, setTemplates] = useState(() => {
+    const db = getLocalDB(clinicId);
+    return db.certificateTemplates?.length ? db.certificateTemplates : DEFAULT_TEMPLATES;
+  });
+
+  // Modal states
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [signatureMode, setSignatureMode] = useState('draw'); // 'draw' | 'upload'
+  const [signatureImg, setSignatureImg] = useState(() => localStorage.getItem('doctor_digital_signature') || null);
+  const [hasDrawn, setHasDrawn] = useState(false);
+  const canvasRef = useRef(null);
+  const isDrawingRef = useRef(false);
+
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [newTplName, setNewTplName] = useState('');
+  const [newTplCategory, setNewTplCategory] = useState('Sickness / Leave');
+  const [newTplHeading, setNewTplHeading] = useState('MEDICAL CERTIFICATE');
+  const [newTplBody, setNewTplBody] = useState(
+    'This is to certify that {PATIENT_NAME} has been treated for {DIAGNOSIS} from {FROM_DATE} to {TO_DATE}...'
+  );
 
   // Form State matching Screenshot 1
   const [certNo, setCertNo] = useState('CERT-2026-0003');
@@ -79,6 +99,114 @@ export default function CertificatesView() {
       ];
     }
     setCertificates(list);
+  };
+
+  const handleTemplateChange = (key) => {
+    setCertTemplate(key);
+    const tpl = templates.find((t) => t.key === key);
+    if (tpl?.body) {
+      setCustomBody(tpl.body);
+    }
+  };
+
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    isDrawingRef.current = true;
+    setHasDrawn(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawingRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#095c54';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    isDrawingRef.current = false;
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasDrawn(false);
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    setSignatureImg(dataUrl);
+    localStorage.setItem('doctor_digital_signature', dataUrl);
+    showToast('Signature saved & applied!');
+    setSignatureModalOpen(false);
+  };
+
+  const handleSignatureUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const dataUrl = evt.target.result;
+        setSignatureImg(dataUrl);
+        localStorage.setItem('doctor_digital_signature', dataUrl);
+        showToast('Signature image uploaded & applied!');
+        setSignatureModalOpen(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveTemplate = (e) => {
+    e.preventDefault();
+    if (!newTplName.trim()) {
+      showToast('Template Name is required', 'error');
+      return;
+    }
+    const key = newTplName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const newTpl = {
+      key,
+      label: newTplName.trim(),
+      category: newTplCategory,
+      heading: newTplHeading.trim() || 'MEDICAL CERTIFICATE',
+      body: newTplBody.trim(),
+    };
+    const updated = [...templates, newTpl];
+    setTemplates(updated);
+    setCertTemplate(key);
+    setCustomBody(newTplBody.trim());
+    const db = getLocalDB(clinicId);
+    db.certificateTemplates = updated;
+    saveLocalDB(clinicId, db);
+    showToast(`Template "${newTplName}" saved!`);
+    setTemplateModalOpen(false);
+    setNewTplName('');
+  };
+
+  const insertTagToNewTpl = (tag) => {
+    setNewTplBody((prev) => prev + ` {${tag}}`);
   };
 
   const handlePatientSelect = (p) => {
@@ -173,19 +301,22 @@ export default function CertificatesView() {
           </div>
           <button
             type="button"
+            onClick={() => setSignatureModalOpen(true)}
             style={{
               background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
-              borderRadius: '6px', padding: '6px 12px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer'
+              borderRadius: '6px', padding: '6px 12px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
             }}
           >
-            + Add Digital Signature
+            <i className="fa-solid fa-signature" style={{ color: 'var(--primary)' }} /> + Add Digital Signature
           </button>
           <button
             type="button"
             className="cms-btn cms-btn-primary"
-            style={{ fontSize: '12.5px', padding: '6px 14px', borderRadius: '6px', fontWeight: 700 }}
+            onClick={() => setTemplateModalOpen(true)}
+            style={{ fontSize: '12.5px', padding: '6px 14px', borderRadius: '6px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            + Add Template
+            <i className="fa-solid fa-plus" /> + Add Template
           </button>
           <button
             type="button"
@@ -238,15 +369,20 @@ export default function CertificatesView() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>SELECT CERTIFICATE TEMPLATE *</label>
-                <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer' }}>+ New Template</span>
+                <span
+                  style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => setTemplateModalOpen(true)}
+                >
+                  + New Template
+                </span>
               </div>
               <select
                 className="cms-input"
                 style={{ height: '36px', fontSize: '12.5px' }}
                 value={certTemplate}
-                onChange={e => setCertTemplate(e.target.value)}
+                onChange={e => handleTemplateChange(e.target.value)}
               >
-                {DEFAULT_TEMPLATES.map(t => (
+                {templates.map(t => (
                   <option key={t.key} value={t.key}>{t.label}</option>
                 ))}
               </select>
@@ -386,8 +522,13 @@ export default function CertificatesView() {
               <i className="fa-solid fa-eye" style={{ color: 'var(--primary)' }} />
               <span>Live Certificate Preview (A4 Formatted)</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 600 }}>+ Add Digital Signature</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{ fontSize: '11.5px', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setSignatureModalOpen(true)}
+              >
+                + Add Digital Signature
+              </span>
               <span style={{
                 background: '#e6f7f2', color: '#059669', borderRadius: '6px',
                 padding: '2px 8px', fontSize: '11px', fontWeight: 700
@@ -444,9 +585,13 @@ export default function CertificatesView() {
               </div>
 
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontStyle: 'italic', fontSize: '13px', color: '#0369a1', fontFamily: 'serif' }}>
-                  {docName}
-                </div>
+                {signatureImg ? (
+                  <img src={signatureImg} alt="Doctor Digital Signature" style={{ height: '42px', maxWidth: '140px', objectFit: 'contain', marginBottom: '4px', display: 'inline-block' }} />
+                ) : (
+                  <div style={{ fontStyle: 'italic', fontSize: '13px', color: '#0369a1', fontFamily: 'serif' }}>
+                    {docName}
+                  </div>
+                )}
                 <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
                   {docName}
                 </div>
@@ -560,6 +705,301 @@ export default function CertificatesView() {
           </table>
         </div>
       </div>
+
+      {/* ── MODAL 1: Doctor Digital Signature (Screenshot 4) ── */}
+      {signatureModalOpen && (
+        <div className="cms-modal-backdrop active" onClick={() => setSignatureModalOpen(false)}>
+          <div
+            className="cms-modal-dialog"
+            style={{ maxWidth: '620px', width: '92%', borderRadius: '14px', padding: '24px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header matching Screenshot 4 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: 'rgba(9,92,84,0.1)', color: 'var(--primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px'
+                }}>
+                  <i className="fa-solid fa-signature" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 2px', color: 'var(--text)' }}>
+                    Doctor Digital Signature
+                  </h3>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {docName} • {clinicName}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSignatureModalOpen(false)}
+                style={{ background: 'none', border: 'none', fontSize: '18px', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px',
+              background: 'var(--surface-alt)', padding: '4px', borderRadius: '8px', marginBottom: '16px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setSignatureMode('draw')}
+                style={{
+                  padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 700,
+                  background: signatureMode === 'draw' ? 'var(--primary)' : 'transparent',
+                  color: signatureMode === 'draw' ? '#fff' : 'var(--text-muted)',
+                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <i className="fa-solid fa-pen-nib" /> Draw Signature
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignatureMode('upload')}
+                style={{
+                  padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 700,
+                  background: signatureMode === 'upload' ? 'var(--primary)' : 'transparent',
+                  color: signatureMode === 'upload' ? '#fff' : 'var(--text-muted)',
+                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <i className="fa-solid fa-cloud-arrow-up" /> Upload Image (PNG/JPG)
+              </button>
+            </div>
+
+            {/* Signature Canvas / Upload Box */}
+            {signatureMode === 'draw' ? (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    Sign using mouse, stylus, or touchscreen:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearCanvas}
+                    style={{
+                      background: 'none', border: '1px solid var(--border)', borderRadius: '6px',
+                      padding: '4px 10px', fontSize: '11.5px', fontWeight: 600, color: 'var(--text-muted)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                    }}
+                  >
+                    <i className="fa-solid fa-eraser" /> Clear Canvas
+                  </button>
+                </div>
+
+                <div style={{
+                  position: 'relative', width: '100%', height: '170px',
+                  border: '2px dashed var(--primary)', borderRadius: '10px',
+                  background: '#ffffff', overflow: 'hidden'
+                }}>
+                  {!hasDrawn && (
+                    <div style={{
+                      position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#94a3b8', fontSize: '14px', fontStyle: 'italic', pointerEvents: 'none'
+                    }}>
+                      Draw Doctor's Signature Here
+                    </div>
+                  )}
+                  <canvas
+                    ref={canvasRef}
+                    width={570}
+                    height={170}
+                    style={{ width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none' }}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    onTouchStart={startDrawing}
+                    onTouchMove={draw}
+                    onTouchEnd={stopDrawing}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                border: '2px dashed var(--border)', borderRadius: '10px', padding: '36px 20px',
+                textAlign: 'center', background: 'var(--surface-alt)'
+              }}>
+                <i className="fa-solid fa-cloud-arrow-up" style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '10px' }} />
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+                  Click or drop your signature file here
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                  Supports transparent PNG or JPG format
+                </div>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  onChange={handleSignatureUpload}
+                  style={{ fontSize: '12px' }}
+                />
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={() => setSignatureModalOpen(false)}
+                className="cms-btn cms-btn-outline"
+                style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveSignature}
+                className="cms-btn cms-btn-primary"
+                style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                ✓ Save &amp; Apply Signature
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 2: Add New Certificate Template (Screenshot 5) ── */}
+      {templateModalOpen && (
+        <div className="cms-modal-backdrop active" onClick={() => setTemplateModalOpen(false)}>
+          <div
+            className="cms-modal-dialog"
+            style={{ maxWidth: '620px', width: '92%', borderRadius: '14px', padding: '24px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header matching Screenshot 5 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fa-solid fa-file-circle-plus" style={{ color: 'var(--primary)', fontSize: '16px' }} />
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+                  Add New Certificate Template
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTemplateModalOpen(false)}
+                style={{ background: 'none', border: 'none', fontSize: '18px', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTemplate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Row 1: Name + Category */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    TEMPLATE NAME *
+                  </label>
+                  <input
+                    type="text"
+                    className="cms-input"
+                    placeholder="e.g. School Absence Certificate"
+                    value={newTplName}
+                    onChange={(e) => setNewTplName(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    CATEGORY
+                  </label>
+                  <select
+                    className="cms-input"
+                    value={newTplCategory}
+                    onChange={(e) => setNewTplCategory(e.target.value)}
+                  >
+                    <option value="Sickness / Leave">Sickness / Leave</option>
+                    <option value="Medical Fitness">Medical Fitness</option>
+                    <option value="Fitness & Recovery">Fitness & Recovery</option>
+                    <option value="Travel & Work">Travel & Work</option>
+                    <option value="Custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Heading Title */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  CERTIFICATE HEADING / TITLE *
+                </label>
+                <input
+                  type="text"
+                  className="cms-input"
+                  value={newTplHeading}
+                  onChange={(e) => setNewTplHeading(e.target.value.toUpperCase())}
+                  required
+                  style={{ textTransform: 'uppercase', fontWeight: 700 }}
+                />
+              </div>
+
+              {/* Row 3: Placeholder tags pills */}
+              <div>
+                <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  INSERT DYNAMIC PLACEHOLDER TAGS (CLICK TO ADD):
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {['PATIENT_NAME', 'AGE', 'GENDER', 'DIAGNOSIS', 'FROM_DATE', 'TO_DATE', 'REST_DAYS', 'CERT_ID', 'TODAY_DATE'].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => insertTagToNewTpl(tag)}
+                      style={{
+                        background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0284c7',
+                        borderRadius: '14px', padding: '3px 10px', fontSize: '11px', fontWeight: 700,
+                        cursor: 'pointer', transition: 'all 0.1s'
+                      }}
+                    >
+                      +{'{' + tag + '}'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 4: Body */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  TEMPLATE BODY TEXT *
+                </label>
+                <textarea
+                  className="cms-input font-mono"
+                  rows={5}
+                  value={newTplBody}
+                  onChange={(e) => setNewTplBody(e.target.value)}
+                  required
+                  style={{ fontSize: '12.5px', lineHeight: 1.6 }}
+                />
+              </div>
+
+              {/* Footer */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setTemplateModalOpen(false)}
+                  className="cms-btn cms-btn-outline"
+                  style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="cms-btn cms-btn-primary"
+                  style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <i className="fa-solid fa-floppy-disk" /> Save Template
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
