@@ -134,10 +134,6 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
     }
   };
 
-    // Auto-open case record
-    onSelectPatient(selectedFamilyId, pId);
-  };
-
   const resetForm = () => {
     setEditingPatientId(null); setName(''); setRelation(''); setAge('');
     setGender('Male'); setBloodGroup(''); setAllergy('');

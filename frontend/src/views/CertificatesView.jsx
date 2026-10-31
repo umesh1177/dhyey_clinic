@@ -196,7 +196,7 @@ export default function CertificatesView() {
     }
   };
 
-  const handleSaveTemplate = (e) => {
+  const handleSaveTemplate = async (e) => {
     e.preventDefault();
     if (!newTplName.trim()) {
       showToast('Template Name is required', 'error');
