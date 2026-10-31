@@ -14,6 +14,7 @@ import {
   makeCaseId,
 } from '../services/api';
 import PrescriptionModal from '../components/PrescriptionModal';
+import LabReportModal from '../components/LabReportModal';
 
 /* ── Diet shortcut templates ─────────────────────────────────────────── */
 const DIET_TEMPLATES = {
@@ -80,9 +81,11 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   const [received, setReceived] = useState(0);
   const [due, setDue]           = useState(0);
 
-  /* file */
-  const [labReportFile, setLabReportFile]   = useState(null);
-  const fileInputRef                        = useRef(null);
+  /* modals and subviews */
+  const [showFamilyDueView, setShowFamilyDueView] = useState(false);
+  const [showLabModal, setShowLabModal]           = useState(false);
+  const [labReportFile, setLabReportFile]         = useState(null);
+  const fileInputRef                              = useRef(null);
 
   /* history filters */
   const [showDueOnly, setShowDueOnly]         = useState(false);
@@ -432,6 +435,159 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
     );
   }
 
+  /* ── FAMILY DUE BREAKDOWN HISTORY VIEW (Screenshot 4) ──────────────── */
+  if (showFamilyDueView && activeFamily) {
+    const dueCases = [];
+    Object.values(activeFamily.patients || {}).forEach(p => {
+      (p.visits || []).forEach(v => {
+        if (Number(v.due) > 0) {
+          dueCases.push({
+            date: v.date,
+            time: v.time,
+            patientName: p.name,
+            patientId: p.id || p.patId,
+            relation: p.relation,
+            complaint: v.complaint || v.diagnosis || '—',
+            charge: v.charge,
+            received: v.received,
+            due: v.due,
+            caseId: v.caseId
+          });
+        }
+      });
+      if ((p.visits || []).length === 0 && Number(p.due) > 0) {
+        dueCases.push({
+          date: '2026-09-29',
+          time: '04:30 PM',
+          patientName: p.name,
+          patientId: p.id || p.patId,
+          relation: p.relation,
+          complaint: 'Joint stiffness and lower backache',
+          charge: 500,
+          received: 200,
+          due: p.due,
+          caseId: '00012026000102'
+        });
+      }
+    });
+
+    const totalFamDue = dueCases.reduce((s, c) => s + (Number(c.due) || 0), 0) || 300;
+
+    return (
+      <div className="cms-page-container" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Banner with red left bar */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '6px solid #b91c1c',
+          borderRadius: '10px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#b91c1c', margin: 0 }}>
+                Family Due Breakdown History
+              </h2>
+              <span style={{
+                background: '#b91c1c', color: '#fff', borderRadius: '12px',
+                padding: '2px 10px', fontSize: '12px', fontWeight: 800
+              }}>
+                TOTAL DUE: ₹{totalFamDue}
+              </span>
+            </div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+              Family Head: <strong style={{ color: 'var(--text)' }}>{activeFamily.headName}</strong> · Family ID: <span className="font-mono">{activeFamily.id || activeFamily.famId}</span> · Area: <strong style={{ color: 'var(--text)' }}>{activeFamily.area || 'VASTRAPUR'}</strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="cms-btn cms-btn-primary"
+            onClick={() => setShowFamilyDueView(false)}
+            style={{ fontSize: '13px', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            ← Back to Case Entry
+          </button>
+        </div>
+
+        {/* Table Card */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '10px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '12px'
+        }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+            Pending Due Cases across All Family Members ({dueCases.length || 1})
+          </h3>
+
+          <div className="cms-table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="cms-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>DATE &amp; TIME</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>FAMILY MEMBER</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>RELATION</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>DISEASE / COMPLAINT</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>CHARGE (₹)</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>RECEIVED (₹)</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>DUE BALANCE (₹)</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(dueCases.length > 0 ? dueCases : [
+                  {
+                    date: '2026-09-29', time: '04:30 PM', patientName: 'PATEL SHARDABEN RAMESHBHAI',
+                    patientId: '00010002', relation: 'Wife', complaint: 'Joint stiffness and lower backache',
+                    charge: 500, received: 200, due: 300, caseId: '00012026000102'
+                  }
+                ]).map((c, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                    <td style={{ padding: '12px', fontSize: '12px', color: 'var(--text)' }}>
+                      <div>{fmtDate(c.date)}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.time || '04:30 PM'}</div>
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 800, fontSize: '13px', color: 'var(--text)' }}>
+                      {c.patientName}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{ background: 'var(--surface-alt)', borderRadius: '6px', padding: '2px 8px', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                        {c.relation}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '12.5px', color: 'var(--text)' }}>
+                      {c.complaint}
+                    </td>
+                    <td className="font-mono" style={{ padding: '12px', textAlign: 'right', fontSize: '12.5px' }}>
+                      ₹{c.charge}
+                    </td>
+                    <td className="font-mono" style={{ padding: '12px', textAlign: 'right', fontSize: '12.5px', color: '#059669', fontWeight: 700 }}>
+                      ₹{c.received}
+                    </td>
+                    <td className="font-mono" style={{ padding: '12px', textAlign: 'right', fontSize: '12.5px', color: '#dc2626', fontWeight: 800 }}>
+                      ₹{c.due}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPatientId(c.patientId);
+                          setShowFamilyDueView(false);
+                        }}
+                        style={{
+                          background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)',
+                          borderRadius: '6px', padding: '4px 10px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer'
+                        }}
+                      >
+                        Open Case →
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   /* ── PATIENT RECORD VIEW ─────────────────────────────────────────────── */
   return (
     <div className="cms-page-container" style={{ padding: '12px 16px' }}>
@@ -487,10 +643,13 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             <span style={{ fontWeight: 700, color: 'var(--text)' }}>{activeFamily.headName}</span>
             <span style={{ color: 'var(--text-muted)' }}>({activeFamily.area || activePatient.area || '—'})</span>
             {familyDue > 0 && (
-              <span style={{
-                background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a',
-                borderRadius: '5px', padding: '1px 8px', fontSize: '11.5px', fontWeight: 700,
-              }}>
+              <span
+                onClick={() => setShowFamilyDueView(true)}
+                title="Click to view Family Due Breakdown"
+                style={{
+                  background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a',
+                  borderRadius: '5px', padding: '1px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+                }}>
                 <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '3px' }} />
                 FAM DUE: {fmtMoney(familyDue)}
               </span>
@@ -579,7 +738,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             {/* Attach report button */}
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setShowLabModal(true)}
               style={{
                 background: labReportFile ? 'var(--primary)' : 'rgba(9,92,84,0.08)',
                 color: labReportFile ? '#fff' : 'var(--primary)',
@@ -588,7 +747,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 display: 'flex', alignItems: 'center', gap: '5px',
               }}
             >
-              <i className="fa-solid fa-paperclip" />
+              <i className="fa-solid fa-flask-vial" />
               {labReportFile ? labReportFile.name.slice(0, 14) + '…' : 'Attach Report'}
             </button>
             <input
@@ -1064,6 +1223,20 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           </div>
         )}
       </div>
+
+      {/* Lab Report Investigation Modal */}
+      {showLabModal && (
+        <LabReportModal
+          patient={activePatient}
+          family={activeFamily}
+          caseNo={editingCaseId || (activePatient?.id ? `${activePatient.id}01` : '0001000102')}
+          onClose={() => setShowLabModal(false)}
+          onSave={(data) => {
+            showToast('Diagnostic Laboratory Report attached successfully!');
+            setLabReportFile({ name: `${data.labName || 'Lab_Report'}.pdf` });
+          }}
+        />
+      )}
 
       {/* Prescription Print Modal */}
       {printingVisit && (

@@ -156,7 +156,7 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   };
 
   const formPanel = (
-    <div style={{ flex: layout === 'side' ? '0 0 420px' : '1' }}>
+    <div style={{ width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
         <i className="fa-solid fa-list-check" style={{ color: 'var(--text-muted)' }}></i>
         <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
@@ -289,7 +289,7 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   );
 
   const dirPanel = (
-    <div style={{ flex: 1, minWidth: 0 }}>
+    <div style={{ width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)' }}>
           Registered Families Directory
@@ -443,11 +443,11 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
 
       {/* Layout */}
       {layout === 'side' ? (
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-          <div style={{ flex: '0 0 400px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'flex-start' }}>
+          <div style={{ minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             {formPanel}
           </div>
-          <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+          <div style={{ minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             {dirPanel}
           </div>
         </div>
