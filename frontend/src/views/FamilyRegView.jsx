@@ -18,6 +18,7 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   const [showPrefTooltip, setShowPrefTooltip] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
+  const [expandedFamilies, setExpandedFamilies] = useState({});
 
   const currentYear = new Date().getFullYear();
   const [headName, setHeadName] = useState('');
@@ -148,6 +149,16 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
+  const isFamilyExpanded = (famId, idx) => {
+    if (expandedFamilies[famId] !== undefined) return expandedFamilies[famId];
+    return idx === 0; // First family expanded by default
+  };
+
+  const toggleExpand = (famId, idx) => {
+    const current = isFamilyExpanded(famId, idx);
+    setExpandedFamilies((prev) => ({ ...prev, [famId]: !current }));
+  };
+
   // Determine clinic prefix badge
   const clinicPrefix = () => {
     if (!clinicId || clinicId === 'demo') return '0001';
@@ -162,7 +173,7 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
         <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>
           Step 1 · Register Family Head
         </span>
-        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--primary)', fontWeight: 600 }}>
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'var(--primary)', fontWeight: 700, background: 'rgba(9,92,84,0.08)', padding: '3px 10px', borderRadius: '12px' }}>
           <i className="fa-solid fa-circle-nodes"></i> Multi-Clinic ID
         </span>
       </div>
@@ -299,73 +310,218 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
         </span>
       </div>
 
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ position: 'relative', marginBottom: '10px' }}>
+        <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '12px' }}></i>
         <input
           type="text"
           className="cms-input"
           placeholder="Search by head name, society, area, or FAM ID..."
           value={filterQuery}
           onChange={(e) => { setFilterQuery(e.target.value); setPage(1); }}
-          style={{ fontSize: '12.5px' }}
+          style={{ paddingLeft: '32px', fontSize: '12.5px' }}
         />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: 'calc(100vh - 340px)', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: 'calc(100vh - 340px)', overflowY: 'auto', paddingRight: '2px' }}>
         {paginated.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
             <i className="fa-solid fa-inbox" style={{ fontSize: '28px', display: 'block', marginBottom: '8px', opacity: 0.4 }}></i>
             No families found
           </div>
         ) : (
-          paginated.map((f) => {
-            const memberCount = Object.keys(f.patients || {}).length;
-            const headPat = Object.values(f.patients || {}).find((p) => p.relation === 'Head') || Object.values(f.patients || {})[0];
+          paginated.map((f, idx) => {
+            const famId = f.id || f.famId;
+            const patientsList = Object.values(f.patients || {});
+            const memberCount = patientsList.length;
+            const isExpanded = isFamilyExpanded(famId, idx);
+
             return (
               <div
-                key={f.id || f.famId}
+                key={famId}
                 style={{
-                  border: '1px solid var(--border)', borderRadius: '10px',
-                  padding: '12px 14px', background: 'var(--surface)',
-                  transition: 'box-shadow 0.15s',
+                  border: isExpanded ? '1.5px solid rgba(9,92,84,0.3)' : '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  background: 'var(--surface)',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isExpanded ? '0 2px 10px rgba(9,92,84,0.06)' : 'none',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'}
-                onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text)', marginBottom: '3px' }}>
-                      {f.headName}
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                      <span>By {f.registeredBy || 'Self'}</span>
-                      <span className="font-mono" style={{ background: 'rgba(9,92,84,0.08)', color: 'var(--primary)', borderRadius: '4px', padding: '0 6px', fontSize: '11px', fontWeight: 700 }}>
-                        FAM {f.id || f.famId}
+                  <div
+                    style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                    onClick={() => toggleExpand(famId, idx)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                      <span style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text)' }}>
+                        {f.headName}
                       </span>
-                      <span>{f.society || ''}{f.society && f.area ? ' · ' : ''}{f.area || ''} · {memberCount} Member{memberCount !== 1 ? 's' : ''}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        By {f.registeredBy || 'Self'}
+                      </span>
+                      <span className="font-mono" style={{ background: 'rgba(9,92,84,0.08)', color: 'var(--primary)', borderRadius: '4px', padding: '1px 6px', fontSize: '11px', fontWeight: 700 }}>
+                        FAM {famId}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {f.phone && <><i className="fa-solid fa-phone" style={{ fontSize: '10px' }}></i> {f.phone}</>}
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                      <span>{f.society || ''}{f.society && f.area ? ' · ' : ''}{f.area || ''} · {memberCount} Member{memberCount !== 1 ? 's' : ''}</span>
+                      {f.phone && <span>· <i className="fa-solid fa-phone" style={{ fontSize: '10px' }}></i> {f.phone}</span>}
                     </div>
                   </div>
+
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: '10px' }}>
                     <button
                       type="button"
                       className="cms-btn cms-btn-ghost"
                       onClick={() => handleEdit(f)}
-                      style={{ fontSize: '12px', padding: '4px 10px', border: '1px solid var(--border)' }}
+                      style={{ fontSize: '12px', padding: '4px 10px', border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
                       <i className="fa-solid fa-pen-to-square"></i> Edit
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(f.id || f.famId)}
+                      onClick={() => handleDelete(famId)}
                       style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px 8px', fontSize: '14px' }}
                       title="Delete family"
                     >
                       <i className="fa-solid fa-trash"></i>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(famId, idx)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px 6px',
+                        fontSize: '12px',
+                      }}
+                      title={isExpanded ? 'Collapse members' : 'Expand members'}
+                    >
+                      <i className={`fa-solid fa-chevron-${isExpanded ? 'up' : 'down'}`}></i>
+                    </button>
                   </div>
                 </div>
+
+                {/* Expandable Family Members Tray */}
+                {isExpanded && (
+                  <div style={{
+                    marginTop: '10px',
+                    background: '#f0fdf9',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px',
+                      paddingBottom: '5px',
+                      borderBottom: '1px solid #d1fae5',
+                    }}>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#065f46',
+                        letterSpacing: '0.5px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}>
+                        <i className="fa-solid fa-users" style={{ color: '#047857' }}></i>
+                        FAMILY MEMBERS ({patientsList.length}):
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: '#6b7280' }}>
+                        ↕ Scroll to view all • Click to open
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+                      {patientsList.length === 0 ? (
+                        <div style={{ fontSize: '11.5px', color: '#6b7280', padding: '6px', textAlign: 'center' }}>
+                          No members found.
+                        </div>
+                      ) : (
+                        patientsList.map((p) => {
+                          const patId = p.id || p.patId;
+                          return (
+                            <div
+                              key={patId}
+                              style={{
+                                background: '#ffffff',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
+                                padding: '8px 12px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                gap: '10px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                              }}
+                              onClick={() => onSelectPatient && onSelectPatient(famId, patId)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--primary)';
+                                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: '12.5px', color: 'var(--text)', marginBottom: '2px' }}>
+                                  {p.name} {p.relation ? <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>({p.relation})</span> : ''}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#6b7280', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                  {p.age && <span>{p.age} Yrs</span>}
+                                  {p.bloodGroup && <span>· {p.bloodGroup}</span>}
+                                  <span>· Allergy: {p.allergy || 'None'}</span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSelectPatient && onSelectPatient(famId, patId);
+                                }}
+                                style={{
+                                  background: '#ffffff',
+                                  border: '1px solid var(--primary)',
+                                  color: 'var(--primary)',
+                                  borderRadius: '5px',
+                                  padding: '4px 10px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  fontFamily: 'monospace',
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'var(--primary)';
+                                  e.currentTarget.style.color = '#ffffff';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#ffffff';
+                                  e.currentTarget.style.color = 'var(--primary)';
+                                }}
+                              >
+                                {patId} →
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })
@@ -405,9 +561,8 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
         <div style={{ position: 'relative' }}>
           <button
             type="button"
-            onClick={() => { setLayout('side'); setShowPrefTooltip(false); }}
-            onMouseEnter={() => setShowPrefTooltip(true)}
-            onMouseLeave={() => setShowPrefTooltip(false)}
+            title="Preference 1: Side by Side (Form & Directory in same row)"
+            onClick={() => setLayout('side')}
             style={{
               padding: '6px 14px', borderRadius: '8px 0 0 8px', fontSize: '12.5px', fontWeight: 600,
               background: layout === 'side' ? 'var(--primary)' : 'var(--surface-alt)',
@@ -417,18 +572,10 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
           >
             <i className="fa-solid fa-table-columns"></i> Preference 1 (Side-by-Side)
           </button>
-          {showPrefTooltip && layout !== 'side' && (
-            <div style={{
-              position: 'absolute', top: '110%', left: 0, background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: '6px', padding: '6px 12px', fontSize: '11.5px', whiteSpace: 'nowrap', zIndex: 100,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: 'var(--text)',
-            }}>
-              Preference 1: Side by Side (Form &amp; Directory in same row)
-            </div>
-          )}
         </div>
         <button
           type="button"
+          title="Preference 2: Stacked View"
           onClick={() => setLayout('stacked')}
           style={{
             padding: '6px 14px', borderRadius: '0 8px 8px 0', fontSize: '12.5px', fontWeight: 600,
