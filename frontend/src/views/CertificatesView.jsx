@@ -38,15 +38,15 @@ export default function CertificatesView() {
     'This is to certify that {PATIENT_NAME} has been treated for {DIAGNOSIS} from {FROM_DATE} to {TO_DATE}...'
   );
 
-  // Form State matching Screenshot 1
-  const [certNo, setCertNo] = useState('CERT-2026-0003');
+  // Form State
+  const [certNo, setCertNo] = useState(`CERT-${new Date().getFullYear()}-0001`);
   const [patientSearch, setPatientSearch] = useState('');
-  const [patientName, setPatientName] = useState('PATEL RAMESHBHAI GOVINDBHAI');
-  const [patientAge, setPatientAge] = useState('46');
+  const [patientName, setPatientName] = useState('');
+  const [patientAge, setPatientAge] = useState('');
   const [patientGender, setPatientGender] = useState('Male');
-  const [diagnosis, setDiagnosis] = useState('Acute Viral Pyrexia');
-  const [fromDate, setFromDate] = useState('2026-10-31');
-  const [toDate, setToDate] = useState('2026-10-31');
+  const [diagnosis, setDiagnosis] = useState('');
+  const [fromDate, setFromDate] = useState(todayISO());
+  const [toDate, setToDate] = useState(todayISO());
   const [restDays, setRestDays] = useState(1);
   const [place, setPlace] = useState('Ahmedabad');
 
@@ -64,6 +64,12 @@ export default function CertificatesView() {
     loadCertificates();
     loadTemplates();
   }, [clinicId]);
+
+  const computeNextCertId = (list) => {
+    const yr = new Date().getFullYear();
+    const count = (list || []).length + 1;
+    return `CERT-${yr}-${String(count).padStart(4, '0')}`;
+  };
 
   const loadTemplates = async () => {
     try {
@@ -85,34 +91,9 @@ export default function CertificatesView() {
   const loadCertificates = async () => {
     try {
       const res = await apiFetch('/certificates');
-      let list = res.data || [];
-      if (list.length === 0) {
-        list = [
-          {
-            certNo: 'CERT-2026-0001',
-            patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
-            patientAge: '46',
-            patientGender: 'Male',
-            templateType: 'Medical Fitness Certificate',
-            diagnosis: 'Acute Viral Pyrexia',
-            validity: '31/10/2026 → 31/10/2026 (1d)',
-            issuedDate: '31/10/2026',
-            status: 'Issued',
-          },
-          {
-            certNo: 'CERT-2026-0002',
-            patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
-            patientAge: '46',
-            patientGender: 'Male',
-            templateType: 'Medical Fitness Certificate',
-            diagnosis: 'Acute Viral Pyrexia',
-            validity: '31/10/2026 → 31/10/2026 (1d)',
-            issuedDate: '31/10/2026',
-            status: 'Issued',
-          },
-        ];
-      }
+      const list = res.data || [];
       setCertificates(list);
+      setCertNo(computeNextCertId(list));
     } catch (err) {
       console.warn(err);
     }
@@ -683,9 +664,16 @@ export default function CertificatesView() {
               </tr>
             </thead>
             <tbody>
-              {certificates
-                .filter(c => !filterQuery || c.patientName.toLowerCase().includes(filterQuery.toLowerCase()) || c.certNo.toLowerCase().includes(filterQuery.toLowerCase()))
-                .map((c, idx) => (
+              {certificates.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                    No issued certificates found in database
+                  </td>
+                </tr>
+              ) : (
+                certificates
+                  .filter(c => !filterQuery || (c.patientName || '').toLowerCase().includes(filterQuery.toLowerCase()) || (c.certNo || '').toLowerCase().includes(filterQuery.toLowerCase()))
+                  .map((c, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px' }}>
                       <span className="font-mono" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '4px', padding: '2px 8px', fontSize: '11.5px', fontWeight: 700 }}>
@@ -737,7 +725,8 @@ export default function CertificatesView() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -18,10 +18,10 @@ export default function DashboardView({ onNavigate }) {
   const [tableSearch, setTableSearch] = useState('');
 
   const [stats, setStats] = useState({
-    visitsToday: 6, newVisits: 6, revisits: 0,
-    dateCollection: 2750, billed: 3300, due: 550,
-    totalPatients: 16, totalFamilies: 6,
-    totalDue: 2100, defaulters: 5,
+    visitsToday: 0, newVisits: 0, revisits: 0,
+    dateCollection: 0, billed: 0, due: 0,
+    totalPatients: 0, totalFamilies: 0,
+    totalDue: 0, defaulters: 0,
   });
   const [allVisits, setAllVisits] = useState([]);
   const [allPatients, setAllPatients] = useState([]);
@@ -53,7 +53,9 @@ export default function DashboardView({ onNavigate }) {
       const { from, to } = getDateRange();
       const pats = [];
       const visits = [];
-      const fups = [];
+
+      const fupsRes = await apiFetch('/followups').catch(() => ({ data: [] }));
+      const fups = Array.isArray(fupsRes?.data) ? fupsRes.data : [];
 
       famList.forEach((f) => {
         Object.values(f.patients || {}).forEach((p) => {
@@ -81,20 +83,20 @@ export default function DashboardView({ onNavigate }) {
       const defaulters = pats.filter((p) => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0)).length;
 
       setStats({
-        visitsToday: inRange.length || 6,
-        newVisits: inRange.filter((v) => v.visitNum === 1).length || 6,
-        revisits: inRange.filter((v) => (v.visitNum || 1) > 1).length || 0,
-        dateCollection: collectionInRange || 2750,
-        billed: billedInRange || 3300,
-        due: dueInRange || 550,
-        totalPatients: pats.length || 16,
-        totalFamilies: famList.length || 6,
-        totalDue: totalDueAll || 2100,
-        defaulters: defaulters || 5,
+        visitsToday: inRange.length,
+        newVisits: inRange.filter((v) => (v.visitNum || 1) === 1).length,
+        revisits: inRange.filter((v) => (v.visitNum || 1) > 1).length,
+        dateCollection: collectionInRange,
+        billed: billedInRange,
+        due: dueInRange,
+        totalPatients: pats.length,
+        totalFamilies: famList.length,
+        totalDue: totalDueAll,
+        defaulters: defaulters,
       });
 
       inRange.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-      setAllVisits(inRange.length > 0 ? inRange : visits);
+      setAllVisits(inRange);
       setAllPatients(pats);
       setFollowUps(fups);
     } catch (e) {
@@ -120,12 +122,14 @@ export default function DashboardView({ onNavigate }) {
     );
   };
 
+  const duesCount = allPatients.filter((p) => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0)).length;
+
   const tabCounts = {
-    opd: allVisits.length || 6,
-    followups: followUps.length || 5,
-    invoices: allVisits.filter((v) => Number(v.charge) > 0).length || 8,
-    patients: allPatients.length || 16,
-    dues: 5,
+    opd: allVisits.length,
+    followups: followUps.length,
+    invoices: allVisits.filter((v) => Number(v.charge) > 0).length,
+    patients: allPatients.length,
+    dues: duesCount,
   };
 
   const TABS = [
@@ -181,7 +185,7 @@ export default function DashboardView({ onNavigate }) {
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: '20px', padding: '5px 14px', fontSize: '12.5px', fontWeight: 700, color: 'var(--text)'
           }}>
-            <span>31-10-2026</span>
+            <span>{todayLabel()}</span>
             <i className="fa-regular fa-calendar" style={{ color: 'var(--text-muted)', fontSize: '12px' }} />
           </div>
         </div>
@@ -243,7 +247,7 @@ export default function DashboardView({ onNavigate }) {
               <i className="fa-solid fa-stethoscope" />
             </div>
             <span style={{ background: '#e0f2fe', color: '#0284c7', borderRadius: '12px', padding: '2px 10px', fontSize: '11px', fontWeight: 700 }}>
-              Today
+              {DATE_OPTS.find(d => d.key === dateRange)?.label || 'Today'}
             </span>
           </div>
           <div>
@@ -401,7 +405,7 @@ export default function DashboardView({ onNavigate }) {
         {/* Title & Search Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text)' }}>
-            {activeTab === 'opd' && `OPD Consultations on ${todayLabel()}`}
+            {activeTab === 'opd' && `OPD Consultations (${DATE_OPTS.find(d => d.key === dateRange)?.label || 'Today'})`}
             {activeTab === 'followups' && 'Upcoming Follow-ups'}
             {activeTab === 'invoices' && 'Invoices & Receipts'}
             {activeTab === 'patients' && 'Patient Directory'}
@@ -510,19 +514,27 @@ export default function DashboardView({ onNavigate }) {
             <table className="cms-table">
               <thead><tr><th>DATE</th><th>PATIENT</th><th>FAMILY ID</th><th>REASON</th><th>ACTION</th></tr></thead>
               <tbody>
-                {filtered(followUps).map((f, i) => (
-                  <tr key={i}>
-                    <td className="font-mono">{fmtDate(f.followUpDate || f.date)}</td>
-                    <td style={{ fontWeight: 700 }}>{f.patientName || f.patName}</td>
-                    <td className="font-mono">{f.patientId}</td>
-                    <td>{f.reason || '—'}</td>
-                    <td>
-                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { patientId: f.patientId })} style={{ fontSize: '12px' }}>
-                        Open →
-                      </button>
+                {filtered(followUps).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No follow-ups scheduled
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered(followUps).map((f, i) => (
+                    <tr key={i}>
+                      <td className="font-mono">{fmtDate(f.followUpDate || f.date)}</td>
+                      <td style={{ fontWeight: 700 }}>{f.patientName || f.patName}</td>
+                      <td className="font-mono">{f.patientId}</td>
+                      <td>{f.reason || '—'}</td>
+                      <td>
+                        <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { patientId: f.patientId })} style={{ fontSize: '12px' }}>
+                          Open →
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -534,19 +546,27 @@ export default function DashboardView({ onNavigate }) {
             <table className="cms-table">
               <thead><tr><th>DATE</th><th>CASE ID</th><th>PATIENT</th><th>BILLED</th><th>RECEIVED</th><th>DUE</th><th>ACTION</th></tr></thead>
               <tbody>
-                {filtered(allVisits.filter(v => Number(v.charge) > 0)).map((v, i) => (
-                  <tr key={i}>
-                    <td className="font-mono">{fmtDate(v.date)}</td>
-                    <td className="font-mono" style={{ color: 'var(--primary)' }}>{v.caseId}</td>
-                    <td style={{ fontWeight: 700 }}>{v.patName}</td>
-                    <td className="font-mono">₹{v.charge}</td>
-                    <td className="font-mono" style={{ color: '#059669', fontWeight: 700 }}>₹{v.received}</td>
-                    <td className="font-mono" style={{ color: Number(v.due) > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 700 }}>₹{v.due}</td>
-                    <td>
-                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: v.familyId, patientId: v.patientId })} style={{ fontSize: '12px' }}>Open →</button>
+                {filtered(allVisits.filter(v => Number(v.charge) > 0)).length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No invoices found
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered(allVisits.filter(v => Number(v.charge) > 0)).map((v, i) => (
+                    <tr key={i}>
+                      <td className="font-mono">{fmtDate(v.date)}</td>
+                      <td className="font-mono" style={{ color: 'var(--primary)' }}>{v.caseId}</td>
+                      <td style={{ fontWeight: 700 }}>{v.patName}</td>
+                      <td className="font-mono">₹{v.charge}</td>
+                      <td className="font-mono" style={{ color: '#059669', fontWeight: 700 }}>₹{v.received}</td>
+                      <td className="font-mono" style={{ color: Number(v.due) > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 700 }}>₹{v.due}</td>
+                      <td>
+                        <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: v.familyId, patientId: v.patientId })} style={{ fontSize: '12px' }}>Open →</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -558,21 +578,29 @@ export default function DashboardView({ onNavigate }) {
             <table className="cms-table">
               <thead><tr><th>PATIENT ID</th><th>PATIENT NAME</th><th>FAMILY HEAD</th><th>AGE</th><th>AREA</th><th>DUE</th><th>ACTION</th></tr></thead>
               <tbody>
-                {filtered(allPatients).map((p, i) => (
-                  <tr key={i}>
-                    <td className="font-mono" style={{ color: 'var(--primary)' }}>{p.id || p.patId}</td>
-                    <td style={{ fontWeight: 700 }}>{p.name}</td>
-                    <td>{p.famHead}</td>
-                    <td>{p.age || '—'}</td>
-                    <td>{p.area || '—'}</td>
-                    <td className="font-mono" style={{ color: Number(p.due) > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 700 }}>
-                      ₹{p.due || 0}
-                    </td>
-                    <td>
-                      <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: p.famId, patientId: p.id || p.patId })} style={{ fontSize: '12px' }}>Open →</button>
+                {filtered(allPatients).length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No patients registered
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered(allPatients).map((p, i) => (
+                    <tr key={i}>
+                      <td className="font-mono" style={{ color: 'var(--primary)' }}>{p.id || p.patId}</td>
+                      <td style={{ fontWeight: 700 }}>{p.name}</td>
+                      <td>{p.famHead}</td>
+                      <td>{p.age || '—'}</td>
+                      <td>{p.area || '—'}</td>
+                      <td className="font-mono" style={{ color: Number(p.due) > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: 700 }}>
+                        ₹{p.due || 0}
+                      </td>
+                      <td>
+                        <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: p.famId, patientId: p.id || p.patId })} style={{ fontSize: '12px' }}>Open →</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -584,21 +612,29 @@ export default function DashboardView({ onNavigate }) {
             <table className="cms-table">
               <thead><tr><th>PATIENT</th><th>FAMILY HEAD</th><th>PHONE</th><th>AREA</th><th>OUTSTANDING DUE</th><th>ACTION</th></tr></thead>
               <tbody>
-                {filtered(allPatients.filter(p => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0))).map((p, i) => {
-                  const patDue = (Number(p.due) || 0) + (p.visits || []).reduce((s, v) => s + (Number(v.due) || 0), 0);
-                  return (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 700 }}>{p.name}</td>
-                      <td>{p.famHead}</td>
-                      <td className="font-mono">{p.phone || '—'}</td>
-                      <td>{p.area || '—'}</td>
-                      <td className="font-mono" style={{ color: '#dc2626', fontWeight: 800 }}>₹{patDue}</td>
-                      <td>
-                        <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: p.famId, patientId: p.id || p.patId })} style={{ fontSize: '12px' }}>Collect →</button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filtered(allPatients.filter(p => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0))).length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No outstanding dues pending
+                    </td>
+                  </tr>
+                ) : (
+                  filtered(allPatients.filter(p => (Number(p.due) || 0) > 0 || (p.visits || []).some(v => Number(v.due) > 0))).map((p, i) => {
+                    const patDue = (Number(p.due) || 0) + (p.visits || []).reduce((s, v) => s + (Number(v.due) || 0), 0);
+                    return (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 700 }}>{p.name}</td>
+                        <td>{p.famHead}</td>
+                        <td className="font-mono">{p.phone || '—'}</td>
+                        <td>{p.area || '—'}</td>
+                        <td className="font-mono" style={{ color: '#dc2626', fontWeight: 800 }}>₹{patDue}</td>
+                        <td>
+                          <button className="cms-btn cms-btn-ghost" onClick={() => onNavigate('case', { familyId: p.famId, patientId: p.id || p.patId })} style={{ fontSize: '12px' }}>Collect →</button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

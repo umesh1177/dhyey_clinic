@@ -154,22 +154,23 @@ const DEFAULT_SOCIETIES = [
 ];
 
 const MASTER_TABS = [
-  { key: 'dietary', label: 'Dietary Suggestions', icon: 'fa-utensils', btnLabel: 'Dietary Suggestion', title: 'Dietary Suggestion Templates', badgeLabel: 'Templates', count: 7 },
-  { key: 'complaints', label: 'Complaints', icon: 'fa-comment-medical', btnLabel: 'Complaint', title: 'All Clinical Complaints & Symptoms', badgeLabel: 'Complaints', count: 12 },
-  { key: 'investigations', label: 'Investigations (Reports)', icon: 'fa-flask-vial', btnLabel: 'Investigation', title: 'Laboratory & Diagnostic Investigations', badgeLabel: 'Tests', count: 14 },
-  { key: 'areas', label: 'Area / Location', icon: 'fa-location-dot', btnLabel: 'Area', title: 'Area & Locality Master', badgeLabel: 'Areas', count: 12 },
-  { key: 'medicines', label: 'Medicine Catalogue', icon: 'fa-pills', btnLabel: 'Medicine', title: 'Clinical Medicine Catalogue', badgeLabel: 'Medicines', count: 47 },
-  { key: 'allergies', label: 'Known Allergies', icon: 'fa-shield-halved', btnLabel: 'Allergy', title: 'Known Allergies Directory', badgeLabel: 'Allergies', count: 9 },
-  { key: 'relations', label: 'Relation to Head', icon: 'fa-users', btnLabel: 'Relation', title: 'Relation Hierarchy Master', badgeLabel: 'Relations', count: 14 },
-  { key: 'societies', label: 'Society / Flat', icon: 'fa-building', btnLabel: 'Society', title: 'Society & Apartment Registry', badgeLabel: 'Societies', count: 9 },
-  { key: 'navigation', label: 'Navigation Shortcuts', icon: 'fa-keyboard', btnLabel: 'Shortcut', title: 'Navigation Shortcuts Directory', badgeLabel: 'Shortcuts', count: 10 },
+  { key: 'dietary', label: 'Dietary Suggestions', icon: 'fa-utensils', btnLabel: 'Dietary Suggestion', title: 'Dietary Suggestion Templates', badgeLabel: 'Templates', count: 0 },
+  { key: 'complaints', label: 'Complaints', icon: 'fa-comment-medical', btnLabel: 'Complaint', title: 'All Clinical Complaints & Symptoms', badgeLabel: 'Complaints', count: 0 },
+  { key: 'investigations', label: 'Investigations (Reports)', icon: 'fa-flask-vial', btnLabel: 'Investigation', title: 'Laboratory & Diagnostic Investigations', badgeLabel: 'Tests', count: 0 },
+  { key: 'areas', label: 'Area / Location', icon: 'fa-location-dot', btnLabel: 'Area', title: 'Area & Locality Master', badgeLabel: 'Areas', count: 0 },
+  { key: 'medicines', label: 'Medicine Catalogue', icon: 'fa-pills', btnLabel: 'Medicine', title: 'Clinical Medicine Catalogue', badgeLabel: 'Medicines', count: 0 },
+  { key: 'allergies', label: 'Known Allergies', icon: 'fa-shield-halved', btnLabel: 'Allergy', title: 'Known Allergies Directory', badgeLabel: 'Allergies', count: 0 },
+  { key: 'relations', label: 'Relation to Head', icon: 'fa-users', btnLabel: 'Relation', title: 'Relation Hierarchy Master', badgeLabel: 'Relations', count: 0 },
+  { key: 'societies', label: 'Society / Flat', icon: 'fa-building', btnLabel: 'Society', title: 'Society & Apartment Registry', badgeLabel: 'Societies', count: 0 },
+  { key: 'navigation', label: 'Navigation Shortcuts', icon: 'fa-keyboard', btnLabel: 'Shortcut', title: 'Navigation Shortcuts Directory', badgeLabel: 'Shortcuts', count: 0 },
 ];
 
 export default function MastersView() {
   const [activeTab, setActiveTab] = useState('dietary');
-  const [dietaryItems, setDietaryItems] = useState(DEFAULT_DIETARY);
+  const [dietaryItems, setDietaryItems] = useState([]);
   const [genericItems, setGenericItems] = useState([]);
   const [filter, setFilter] = useState('');
+  const [counts, setCounts] = useState({});
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,18 +185,38 @@ export default function MastersView() {
   const [formArea, setFormArea] = useState('Vastrapur');
 
   useEffect(() => {
+    loadAllCounts();
+  }, []);
+
+  const loadAllCounts = async () => {
+    try {
+      const res = await apiFetch('/masters/all');
+      if (res.data) {
+        const c = {};
+        Object.keys(res.data).forEach(k => {
+          c[k] = Array.isArray(res.data[k]) ? res.data[k].length : 0;
+        });
+        setCounts(c);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  useEffect(() => {
     loadTabItems(activeTab);
   }, [activeTab]);
 
   const loadTabItems = async (tabKey) => {
     try {
       const res = await apiFetch(`/masters/${tabKey}`);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         if (tabKey === 'dietary') {
           setDietaryItems(res.data);
         } else {
           setGenericItems(res.data);
         }
+        setCounts(prev => ({ ...prev, [tabKey]: res.data.length }));
         return;
       }
     } catch (err) {
@@ -203,17 +224,11 @@ export default function MastersView() {
     }
 
     if (tabKey === 'dietary') {
-      setDietaryItems(DEFAULT_DIETARY);
+      setDietaryItems([]);
+      setCounts(prev => ({ ...prev, [tabKey]: 0 }));
     } else {
-      let list = [];
-      if (tabKey === 'complaints') list = DEFAULT_COMPLAINTS;
-      else if (tabKey === 'investigations') list = DEFAULT_INVESTIGATIONS;
-      else if (tabKey === 'areas') list = DEFAULT_AREAS;
-      else if (tabKey === 'medicines') list = DEFAULT_MEDICINES;
-      else if (tabKey === 'allergies') list = DEFAULT_ALLERGIES;
-      else if (tabKey === 'relations') list = DEFAULT_RELATIONS;
-      else if (tabKey === 'societies') list = DEFAULT_SOCIETIES;
-      setGenericItems(list || []);
+      setGenericItems([]);
+      setCounts(prev => ({ ...prev, [tabKey]: 0 }));
     }
   };
 
@@ -408,7 +423,7 @@ export default function MastersView() {
                 color: isActive ? '#fff' : 'var(--text-muted)',
                 borderRadius: '8px', padding: '1px 6px', fontSize: '11px', fontWeight: 800
               }}>
-                {tab.count}
+                {counts[tab.key] !== undefined ? counts[tab.key] : (tab.key === activeTab ? (activeTab === 'dietary' ? dietaryItems.length : genericItems.length) : 0)}
               </span>
             </button>
           );

@@ -1167,7 +1167,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>INVESTIGATION</label>
                         <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
                           placeholder="e.g. CBC..."
-                          value={editingCaseId === v.caseId ? investigation : (v.investigation || 'e.g. CBC...')}
+                          value={editingCaseId === v.caseId ? investigation : (v.investigation || '')}
                           onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setInvestigation(e.target.value); }}
                           list="investigations-list" />
                       </div>
@@ -1175,7 +1175,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>COMPLAINT</label>
                         <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
                           placeholder="High fever, body chills and shivering for 2 da"
-                          value={editingCaseId === v.caseId ? complaint : (v.complaint || 'High fever, body chills and shivering for 2 da')}
+                          value={editingCaseId === v.caseId ? complaint : (v.complaint || '')}
                           onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setComplaint(e.target.value); }}
                           list="complaints-list" />
                       </div>
@@ -1267,7 +1267,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                           </button>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {(editingCaseId === v.caseId ? treatment : (v.treatment?.length ? v.treatment : [{ name: 'Clinical Consultation', qty: '1' }, { name: 'Injection Paracetamol IM', qty: '1' }])).map((t, i) => (
+                          {(editingCaseId === v.caseId ? treatment : (v.treatment || [])).map((t, i) => (
                             <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                               <input
                                 type="text"
@@ -1313,7 +1313,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                           </button>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {(editingCaseId === v.caseId ? prescription : (v.prescription?.length ? v.prescription : [{ name: 'Paracetamol 650mg', qty: '1', mor: '1', noon: '1', eve: '1', ngt: '0', timing: 'AF' }, { name: 'Pantoprazole 40mg', qty: '1', mor: '1', noon: '0', eve: '0', ngt: '0', timing: 'BF' }])).map((rx, i) => (
+                          {(editingCaseId === v.caseId ? prescription : (v.prescription || [])).map((rx, i) => (
                             <div key={i} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                               <input
                                 type="text"
@@ -1357,7 +1357,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                       borderTop: '1px solid var(--border)', paddingTop: '12px',
                     }}>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
-                        CHARGE ₹ {editingCaseId === v.caseId ? charge : (v.charge || 600)}
+                        CHARGE ₹ {editingCaseId === v.caseId ? charge : (v.charge ?? 0)}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>PAID ₹</span>
@@ -1365,7 +1365,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                           type="number"
                           className="cms-input font-mono"
                           style={{ width: '70px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
-                          value={editingCaseId === v.caseId ? received : (v.received || 600)}
+                          value={editingCaseId === v.caseId ? received : (v.received ?? 0)}
                           onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); handleReceivedChange(e.target.value); }}
                         />
                       </div>
@@ -1451,18 +1451,26 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                       <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
                         {fmtDate(v.date)} {v.time || '09:30 AM'}
                       </span>
-                      <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                        BP: {v.bp || '130/85'}
-                      </span>
-                      <span style={{ background: '#fce7f3', color: '#9d174d', border: '1px solid #fbcfe8', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                        Ref: {v.reference || 'Dr. Shah'}
-                      </span>
-                      <span style={{ background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                        Complaint: {v.complaint || 'High fever, body chills and shivering for 2 days'}
-                      </span>
-                      <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                        Sugar: {v.sugar || 110}
-                      </span>
+                      {v.bp && (
+                        <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          BP: {v.bp}
+                        </span>
+                      )}
+                      {v.reference && (
+                        <span style={{ background: '#fce7f3', color: '#9d174d', border: '1px solid #fbcfe8', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          Ref: {v.reference}
+                        </span>
+                      )}
+                      {v.complaint && (
+                        <span style={{ background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          Complaint: {v.complaint}
+                        </span>
+                      )}
+                      {v.sugar && (
+                        <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          Sugar: {v.sugar}
+                        </span>
+                      )}
                     </div>
 
                     {/* Actions */}

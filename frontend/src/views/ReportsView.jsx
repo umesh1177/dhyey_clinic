@@ -79,19 +79,6 @@ export default function ReportsView({ onNavigate }) {
         });
       });
 
-      // Default fallback groups if empty
-      if (!docs['Dr. Mehta']) {
-        docs['Dr. Mehta'] = [{
-          date: todayISO(), caseId: '00012026000301', patientName: 'DESAI BHUPENDRABHAI KANTILAL',
-          diagnosis: 'Chronic Gastritis & Mild Hypertension', charge: 500, due: 250,
-        }];
-      }
-      if (!docs['Dr. Shah']) {
-        docs['Dr. Shah'] = [{
-          date: todayISO(), caseId: '00012026000101', patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
-          diagnosis: 'Acute Viral Pyrexia', charge: 600, due: 0,
-        }];
-      }
       setDocGroups(docs);
 
       // 3. Patient History List
@@ -100,9 +87,9 @@ export default function ReportsView({ onNavigate }) {
 
       // 4. Daily Collections & Monthly
       setDailyList(allVisits);
-      const billed = allVisits.reduce((s, v) => s + v.charge, 0);
-      const rec = allVisits.reduce((s, v) => s + v.received, 0);
-      const due = allVisits.reduce((s, v) => s + v.due, 0);
+      const billed = allVisits.reduce((s, v) => s + (Number(v.charge) || 0), 0);
+      const rec = allVisits.reduce((s, v) => s + (Number(v.received) || 0), 0);
+      const due = allVisits.reduce((s, v) => s + (Number(v.due) || 0), 0);
       setMonthlyStats({ totalBilled: billed, totalReceived: rec, totalDue: due });
     } catch (e) {
       console.warn(e);
@@ -171,7 +158,11 @@ export default function ReportsView({ onNavigate }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {Object.keys(areaGroups)
+            {Object.keys(areaGroups).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: '8px' }}>
+                No patients registered in any area
+              </div>
+            ) : Object.keys(areaGroups)
               .filter(a => !areaSearch || a.toLowerCase().includes(areaSearch.toLowerCase()))
               .map((areaName) => {
                 const pats = areaGroups[areaName];
@@ -252,7 +243,11 @@ export default function ReportsView({ onNavigate }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {Object.keys(docGroups)
+            {Object.keys(docGroups).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: '8px' }}>
+                No doctor referral visits recorded
+              </div>
+            ) : Object.keys(docGroups)
               .filter(d => !docSearch || d.toLowerCase().includes(docSearch.toLowerCase()))
               .map((drName) => {
                 const visits = docGroups[drName].filter(v => !patDocSearch || v.patientName.toLowerCase().includes(patDocSearch.toLowerCase()));
@@ -334,28 +329,36 @@ export default function ReportsView({ onNavigate }) {
                 </tr>
               </thead>
               <tbody>
-                {historyList
-                  .filter(h => !historySearch || h.patientName.toLowerCase().includes(historySearch.toLowerCase()) || (h.patientId && h.patientId.includes(historySearch)))
-                  .map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
-                      <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>{fmtDate(item.date)}</td>
-                      <td className="font-mono" style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--primary)', fontWeight: 700 }}>{item.caseId}</td>
-                      <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: '12.5px', color: 'var(--text)' }}>{item.patientName}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <span style={{
-                          background: '#f0fdfa', color: '#0f766e', border: '1px solid #ccfbf1',
-                          borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 600
-                        }}>
-                          {item.diagnosis}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text)', maxWidth: '220px' }}>{item.complaint}</td>
-                      <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12.5px' }}>₹{item.charge}</td>
-                      <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12.5px', fontWeight: 700, color: item.due > 0 ? '#dc2626' : 'var(--text-muted)' }}>
-                        {item.due > 0 ? `₹${item.due}` : 'Nil'}
-                      </td>
-                    </tr>
-                  ))}
+                {historyList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No patient visit history found
+                    </td>
+                  </tr>
+                ) : (
+                  historyList
+                    .filter(h => !historySearch || (h.patientName || '').toLowerCase().includes(historySearch.toLowerCase()) || (h.patientId && h.patientId.includes(historySearch)))
+                    .map((item, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                        <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>{fmtDate(item.date)}</td>
+                        <td className="font-mono" style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--primary)', fontWeight: 700 }}>{item.caseId}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: '12.5px', color: 'var(--text)' }}>{item.patientName}</td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{
+                            background: '#f0fdfa', color: '#0f766e', border: '1px solid #ccfbf1',
+                            borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 600
+                          }}>
+                            {item.diagnosis}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text)', maxWidth: '220px' }}>{item.complaint}</td>
+                        <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12.5px' }}>₹{item.charge}</td>
+                        <td className="font-mono" style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12.5px', fontWeight: 700, color: item.due > 0 ? '#dc2626' : 'var(--text-muted)' }}>
+                          {item.due > 0 ? `₹${item.due}` : 'Nil'}
+                        </td>
+                      </tr>
+                    ))
+                )}
               </tbody>
             </table>
           </div>
@@ -375,14 +378,14 @@ export default function ReportsView({ onNavigate }) {
                 Payment Collections Log
               </div>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669' }}>
-                Total: ₹2,750
+                Total: {fmtMoney(dailyList.reduce((s, v) => s + (Number(v.received) || 0), 0))}
               </div>
             </div>
             <div style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               border: '1px solid #cbd5e1', borderRadius: '6px', padding: '4px 10px', background: '#fff'
             }}>
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>31-10-2026</span>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>{fmtDate(todayISO())}</span>
               <i className="fa-regular fa-calendar" style={{ color: '#64748b' }} />
             </div>
           </div>
@@ -400,23 +403,26 @@ export default function ReportsView({ onNavigate }) {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { date: '31/10/2026', caseId: '00012026000101', patient: 'PATEL RAMESHBHAI GOVINDBHAI', head: 'PATEL RAMESHBHAI GOVINDBHAI', rec: '₹600', due: 'Nil' },
-                  { date: '31/10/2026', caseId: '00012026000202', patient: 'SHARMA PRIYABEN AMITBHAI', head: 'SHARMA AMITBHAI DINESHBHAI', rec: '₹500', due: 'Nil' },
-                  { date: '31/10/2026', caseId: '00012026000301', patient: 'DESAI BHUPENDRABHAI KANTILAL', head: 'DESAI BHUPENDRABHAI KANTILAL', rec: '₹250', due: '₹250', isDue: true },
-                  { date: '31/10/2026', caseId: '00012026000302', patient: 'DESAI KANTABEN KANTILAL', head: 'DESAI BHUPENDRABHAI KANTILAL', rec: '₹750', due: 'Nil' },
-                  { date: '31/10/2026', caseId: '00012026000401', patient: 'SHAH JIGNESHBHAI PRAVINCHANDRA', head: 'SHAH JIGNESHBHAI PRAVINCHANDRA', rec: '₹200', due: '₹300', isDue: true },
-                  { date: '31/10/2026', caseId: '00012026000402', patient: 'SHAH AARAV JIGNESHBHAI', head: 'SHAH JIGNESHBHAI PRAVINCHANDRA', rec: '₹450', due: 'Nil' },
-                ].map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
-                    <td style={{ padding: '10px 12px', fontSize: '12px' }}>{item.date}</td>
-                    <td className="font-mono" style={{ padding: '10px 12px', fontSize: '12px', fontWeight: 700 }}>{item.caseId}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: '12.5px' }}>{item.patient}</td>
-                    <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>{item.head}</td>
-                    <td className="font-mono" style={{ padding: '10px 12px', color: '#059669', fontWeight: 800, fontSize: '12.5px' }}>{item.rec}</td>
-                    <td className="font-mono" style={{ padding: '10px 12px', color: item.isDue ? '#dc2626' : 'var(--text-muted)', fontWeight: item.isDue ? 800 : 500, fontSize: '12.5px' }}>{item.due}</td>
+                {dailyList.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No payment collections recorded for this period
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  dailyList.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
+                      <td style={{ padding: '10px 12px', fontSize: '12px' }}>{fmtDate(item.date)}</td>
+                      <td className="font-mono" style={{ padding: '10px 12px', fontSize: '12px', fontWeight: 700 }}>{item.caseId}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: '12.5px' }}>{item.patientName}</td>
+                      <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted)' }}>{item.headName}</td>
+                      <td className="font-mono" style={{ padding: '10px 12px', color: '#059669', fontWeight: 800, fontSize: '12.5px' }}>{fmtMoney(item.received)}</td>
+                      <td className="font-mono" style={{ padding: '10px 12px', color: item.due > 0 ? '#dc2626' : 'var(--text-muted)', fontWeight: item.due > 0 ? 800 : 500, fontSize: '12.5px' }}>
+                        {item.due > 0 ? fmtMoney(item.due) : 'Nil'}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
