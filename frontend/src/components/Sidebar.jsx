@@ -13,10 +13,6 @@ export default function Sidebar({ currentView, setCurrentView, isCollapsed, isMo
     { key: 'masters', label: 'Master Data', icon: 'fa-layer-group', kbd: 'F7' },
     { key: 'certificates', label: 'Medical Certificate', icon: 'fa-certificate', kbd: 'F6' },
     { key: 'reports', label: 'Reports', icon: 'fa-chart-line', kbd: 'F5' },
-    { key: 'billing', label: 'Billing & Dues', icon: 'fa-file-invoice-dollar' },
-    { key: 'inventory', label: 'Pharmacy Stock', icon: 'fa-boxes-stacked' },
-    { key: 'followups', label: 'Follow-ups', icon: 'fa-calendar-check' },
-    { key: 'feedback', label: 'Help & Feedback', icon: 'fa-headset', kbd: 'F8' },
   ];
 
   return (
@@ -71,7 +67,7 @@ export default function Sidebar({ currentView, setCurrentView, isCollapsed, isMo
           <b>Shortcuts:</b><br />
           F1 Family · F2 Member · F3 Case<br />
           F4 Dashboard · F5 Reports · F6 Cert<br />
-          F7 Masters · F8 Support · / Search
+          F7 Masters · / Search
         </div>
       </aside>
     </>

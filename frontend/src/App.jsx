@@ -12,10 +12,6 @@ import ConsultationView from './views/ConsultationView';
 import MastersView from './views/MastersView';
 import CertificatesView from './views/CertificatesView';
 import ReportsView from './views/ReportsView';
-import BillingView from './views/BillingView';
-import InventoryView from './views/InventoryView';
-import FollowUpsView from './views/FollowUpsView';
-import FeedbackView from './views/FeedbackView';
 
 export default function App() {
   const { isAuthenticated } = useAuth();
@@ -90,7 +86,6 @@ export default function App() {
       if (e.key === 'F5') { e.preventDefault(); navigateTo('reports'); }
       if (e.key === 'F6') { e.preventDefault(); navigateTo('certificates'); }
       if (e.key === 'F7') { e.preventDefault(); navigateTo('masters'); }
-      if (e.key === 'F8') { e.preventDefault(); navigateTo('feedback'); }
 
       if (e.key === '/' && !isInput) {
         e.preventDefault();
@@ -143,14 +138,6 @@ export default function App() {
         return <CertificatesView />;
       case 'reports':
         return <ReportsView />;
-      case 'billing':
-        return <BillingView />;
-      case 'inventory':
-        return <InventoryView />;
-      case 'followups':
-        return <FollowUpsView onNavigate={navigateTo} />;
-      case 'feedback':
-        return <FeedbackView />;
       default:
         return <DashboardView onNavigate={navigateTo} />;
     }

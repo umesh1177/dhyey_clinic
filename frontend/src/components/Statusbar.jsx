@@ -25,7 +25,6 @@ export default function Statusbar() {
       <span>F5 Reports</span>
       <span>F6 Certificate</span>
       <span>F7 Master Data</span>
-      <span>F8 Feedback</span>
       <span id="statusbar-clock" className="font-mono" style={{ marginLeft: 'auto' }}>
         {clock}
       </span>
