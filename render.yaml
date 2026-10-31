@@ -1,28 +1,52 @@
-# ============================================================
-# Render.com Deployment Configuration
-# ============================================================
-# Deploy at: https://render.com
-# Connect your GitHub repo → Render detects this file automatically.
+# # ============================================================
+# # Render.com Deployment Configuration
+# # ============================================================
+# # Deploy at: https://render.com
+# # Connect your GitHub repo → Render detects this file automatically.
+
+# services:
+#   - type: web
+#     name: dhyey-clinic-cms
+#     runtime: node
+#     region: singapore   # closest to India
+#     plan: free
+
+#     # Build from repo root so both frontend/ and backend/ are available.
+#     # Install backend npm packages explicitly.
+#     buildCommand: cd backend && npm install
+
+#     # Start the Node server from the backend directory
+#     startCommand: cd backend && node server.js
+
+#     # Health check endpoint
+#     healthCheckPath: /api/health
+
+#     # Environment variables
+#     # MONGO_URI and JWT_SECRET must be set manually in the Render dashboard
+#     envVars:
+#       - key: NODE_ENV
+#         value: production
+#       - key: JWT_EXPIRE
+#         value: 30d
+#       - key: MONGO_URI
+#         sync: false
+#       - key: JWT_SECRET
+#         sync: false
+
 
 services:
   - type: web
     name: dhyey-clinic-cms
     runtime: node
-    region: singapore   # closest to India
+    region: singapore
     plan: free
 
-    # Build from repo root so both frontend/ and backend/ are available.
-    # Install backend npm packages explicitly.
-    buildCommand: cd backend && npm install
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm ci
 
-    # Start the Node server from the backend directory
-    startCommand: cd backend && node server.js
+    startCommand: cd backend && npm start
 
-    # Health check endpoint
     healthCheckPath: /api/health
 
-    # Environment variables
-    # MONGO_URI and JWT_SECRET must be set manually in the Render dashboard
     envVars:
       - key: NODE_ENV
         value: production
