@@ -5,9 +5,10 @@
  * =========================================================
  */
 
-const API_BASE_URL = (typeof window !== 'undefined' && (window.location.port === '5000' || window.location.port === '5173'))
-  ? ''
-  : 'http://localhost:5000';
+// const API_BASE_URL = (typeof window !== 'undefined' && (window.location.port === '5000' || window.location.port === '5173'))
+//   ? ''
+//   : 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 /* ---- Storage & Helpers ---- */
 export const pad = (n, len = 4) => String(n || 0).padStart(len, '0');
