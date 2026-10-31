@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getLocalDB, saveLocalDB, apiFetch,
+  apiFetch,
   showToast, getSharedMasterCollection, pad,
 } from '../services/api';
 
@@ -39,39 +39,41 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
   }, [clinicId]);
 
   useEffect(() => {
-    if (selectedFamilyId) {
+    if (selectedFamilyId && families.length > 0) {
       computeNextPatientId(selectedFamilyId);
-      const db = getLocalDB(clinicId);
-      const fam = db.families[selectedFamilyId];
+      const fam = families.find(f => (f.id || f.famId) === selectedFamilyId);
       if (fam && !editingPatientId) {
         setSociety(fam.society || '');
         setArea(fam.area || '');
         setPhone(fam.phone || '');
       }
     }
-  }, [selectedFamilyId]);
+  }, [selectedFamilyId, families]);
 
   useEffect(() => {
-    if (initialPatientId && initialFamilyId) {
-      const db = getLocalDB(clinicId);
-      const fam = db.families[initialFamilyId];
+    if (initialPatientId && initialFamilyId && families.length > 0) {
+      const fam = families.find(f => (f.id || f.famId) === initialFamilyId);
       if (fam?.patients?.[initialPatientId]) loadPatientForEdit(fam.patients[initialPatientId]);
     }
-  }, [initialPatientId, initialFamilyId]);
+  }, [initialPatientId, initialFamilyId, families]);
 
-  const loadData = () => {
-    const db = getLocalDB(clinicId);
-    const list = Object.values(db.families || {});
-    setFamilies(list);
-    if (initialFamilyId) {
-      setSelectedFamilyId(initialFamilyId);
+  const loadData = async () => {
+    try {
+      const res = await apiFetch('/families');
+      const list = res.data || [];
+      setFamilies(list);
+      if (initialFamilyId) {
+        setSelectedFamilyId(initialFamilyId);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to load families from database', 'error');
     }
   };
 
   const computeNextPatientId = (fId) => {
     if (editingPatientId) return;
-    const db = getLocalDB(clinicId);
-    const fam = db.families[fId];
+    const fam = families.find(f => (f.id || f.famId) === fId);
     if (!fam) return;
     const seq = pad(fam.sequence || 1, 4);
     const pCount = Object.keys(fam.patients || {}).length + 1;
@@ -87,31 +89,50 @@ export default function PatientRegView({ initialFamilyId, initialPatientId, onNa
     setPhone(p.phone || ''); setSociety(p.society || ''); setArea(p.area || '');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFamilyId) { showToast('Please select a family.', 'error'); return; }
     if (!name.trim()) { showToast('Patient name is required.', 'error'); return; }
 
-    const db = getLocalDB(clinicId);
-    const fam = db.families[selectedFamilyId];
-    if (!fam) { showToast('Family not found.', 'error'); return; }
-    if (!fam.patients) fam.patients = {};
-
     const pId = editingPatientId || patientId;
-    const existingVisits = fam.patients[pId]?.visits || [];
-
-    const newPat = {
-      id: pId, patId: pId, familyId: selectedFamilyId,
-      name: name.trim().toUpperCase(), relation,
-      age: age.trim(), gender, bloodGroup: bloodGroup.trim(),
-      allergy: allergy.trim() || 'None', phone: phone.trim(),
-      society: society.trim(), area: area.trim(), visits: existingVisits,
-    };
-
-    fam.patients[pId] = newPat;
-    saveLocalDB(clinicId, db);
-    showToast(editingPatientId ? `Patient updated.` : `Member ${newPat.name} added!`);
-    apiFetch('/patients', { method: editingPatientId ? 'PUT' : 'POST', body: newPat }).catch(() => {});
+    try {
+      if (editingPatientId) {
+        await apiFetch(`/patients/${editingPatientId}`, {
+          method: 'PUT',
+          body: {
+            name: name.trim().toUpperCase(),
+            relation,
+            age: age.trim(),
+            gender,
+            bloodGroup: bloodGroup.trim(),
+            allergy: allergy.trim() || 'None',
+            phone: phone.trim(),
+          },
+        });
+        showToast('Patient updated in database.');
+      } else {
+        await apiFetch('/patients', {
+          method: 'POST',
+          body: {
+            familyId: selectedFamilyId,
+            name: name.trim().toUpperCase(),
+            relation,
+            age: age.trim(),
+            gender,
+            bloodGroup: bloodGroup.trim(),
+            allergy: allergy.trim() || 'None',
+            society: society.trim(),
+            area: area.trim(),
+            phone: phone.trim(),
+          },
+        });
+        showToast(`Member ${name.toUpperCase()} added to database!`);
+      }
+      onSelectPatient(selectedFamilyId, pId);
+    } catch (err) {
+      showToast(err.message || 'Failed to save patient to database', 'error');
+    }
+  };
 
     // Auto-open case record
     onSelectPatient(selectedFamilyId, pId);

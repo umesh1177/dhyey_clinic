@@ -40,6 +40,15 @@ const app = express();
 // =========================================================
 
 const DEFAULT_MASTERS = {
+  dietary: [
+    { id: 'diet-1', code: 'DB', title: 'Diabetic Diet', description: 'Diabetic diet: avoid sugar, sweets and fried food. Prefer high-fibre meals, eat on time.', createdAt: '2026-01-01' },
+    { id: 'diet-2', code: 'CV', title: 'Cardiac / Low Salt', description: 'Low-salt, low-oil diet. Avoid red meat and packaged/processed food.', createdAt: '2026-01-01' },
+    { id: 'diet-3', code: 'LQ', title: 'Liquid & Soft Food', description: 'Plenty of fluids and light, easily digestible food until fever/cough settles.', createdAt: '2026-01-01' },
+    { id: 'diet-4', code: 'SUGAR', title: 'Strict Sugar-Free', description: 'Avoid direct sugar, jaggery, honey, sweets, sweet fruits like mango & banana.', createdAt: '2026-01-01' },
+    { id: 'diet-5', code: 'BP', title: 'Hypertension / Low Sodium', description: 'Strict low salt diet. Avoid pickles, papad, processed cheese and salty snacks.', createdAt: '2026-01-01' },
+    { id: 'diet-6', code: 'ACID', title: 'GERD / Acidity Care', description: 'Avoid spicy food, oily dishes, tea, coffee, citrus fruits. Drink cool milk or coconut water.', createdAt: '2026-01-01' },
+    { id: 'diet-7', code: 'LVR', title: 'Liver Care', description: 'Avoid alcohol, deep-fried food, heavy fats, eat fresh fruits and boiled veggies.', createdAt: '2026-01-01' },
+  ],
   complaints: [
     { id: 'c1', name: 'Fever / High Temperature', category: 'General', description: 'Body temperature above 100°F with chills' },
     { id: 'c2', name: 'Cough / Cold / Sore Throat', category: 'Respiratory', description: 'Dry or productive throat irritation and congestion' },
@@ -812,6 +821,7 @@ app.get(['/api/families', '/api/family'], authMiddleware, async (req, res) => {
     const clinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'demo';
     const families = await Family.find({ clinicId }).sort({ createdAt: -1 });
     const patients = await Patient.find({ clinicId });
+    const consultations = await Consultation.find({ clinicId }).sort({ date: 1, time: 1 });
 
     const result = families.map((fam) => {
       const famObj = fam.toObject();
@@ -819,7 +829,9 @@ app.get(['/api/families', '/api/family'], authMiddleware, async (req, res) => {
       patients
         .filter((p) => p.familyId === fam.famId)
         .forEach((p) => {
-          famObj.patients[p.patId] = p;
+          const pObj = p.toObject();
+          pObj.visits = consultations.filter((c) => c.patientId === p.patId);
+          famObj.patients[p.patId] = pObj;
         });
       return famObj;
     });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getLocalDB, saveLocalDB, apiFetch,
+  apiFetch,
   generateFamilyId, showToast, getSharedMasterCollection, pad,
 } from '../services/api';
 
@@ -37,14 +37,19 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
 
   useEffect(() => { loadFamilies(); }, [clinicId]);
 
-  const loadFamilies = () => {
-    const db = getLocalDB(clinicId);
-    const list = Object.values(db.families || {});
-    list.sort((a, b) => (b.sequence || 0) - (a.sequence || 0));
-    setFamilies(list);
-    const nextSeq = list.length > 0 ? Math.max(...list.map((f) => Number(f.sequence || 0))) + 1 : 1;
-    setSequence(nextSeq);
-    setGeneratedFamId(generateFamilyId(clinicId, currentYear, nextSeq));
+  const loadFamilies = async () => {
+    try {
+      const res = await apiFetch('/families');
+      const list = res.data || [];
+      list.sort((a, b) => (b.sequence || 0) - (a.sequence || 0));
+      setFamilies(list);
+      const nextSeq = list.length > 0 ? Math.max(...list.map((f) => Number(f.sequence || 0))) + 1 : 1;
+      setSequence(nextSeq);
+      setGeneratedFamId(generateFamilyId(clinicId, currentYear, nextSeq));
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to load families from database', 'error');
+    }
   };
 
   const handleSequenceChange = (val) => {
@@ -53,66 +58,65 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
     setGeneratedFamId(generateFamilyId(clinicId, currentYear, n));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!headName.trim()) { showToast('Family Head Name is required.', 'error'); return; }
-    const db = getLocalDB(clinicId);
     const famId = editingFamId || generatedFamId;
 
-    if (editingFamId && db.families[editingFamId]) {
-      const fam = db.families[editingFamId];
-      fam.headName = headName.trim();
-      fam.age = age.trim();
-      fam.bloodGroup = bloodGroup;
-      fam.allergy = allergy.trim();
-      fam.phone = phone.trim();
-      fam.society = society.trim();
-      fam.area = area.trim();
-      fam.registeredBy = registeredBy;
-      // update head patient
-      const headPat = Object.values(fam.patients || {}).find((p) => p.relation === 'Head');
-      if (headPat) { headPat.name = headName.trim(); headPat.age = age; headPat.bloodGroup = bloodGroup; headPat.allergy = allergy; }
-      saveLocalDB(clinicId, db);
-      showToast('Family updated successfully.');
-      setEditingFamId(null);
-    } else {
-      const headPatId = `${pad(sequence, 4)}0001`;
-      const newFamily = {
-        id: famId, famId, headName: headName.trim(), age: age.trim(), bloodGroup,
-        allergy: allergy.trim(), phone: phone.trim(), society: society.trim(),
-        area: area.trim(), registeredBy, year: currentYear, sequence,
-        patients: {
-          [headPatId]: {
-            id: headPatId, patId: headPatId, familyId: famId,
-            name: headName.trim(), relation: 'Head', age: age.trim(),
-            gender: 'Male', bloodGroup, allergy: allergy.trim() || 'None',
-            society: society.trim(), area: area.trim(), phone: phone.trim(), visits: [],
+    try {
+      if (editingFamId) {
+        await apiFetch(`/families/${editingFamId}`, {
+          method: 'PUT',
+          body: {
+            headName: headName.trim(),
+            age: age.trim(),
+            bloodGroup,
+            allergy: allergy.trim(),
+            phone: phone.trim(),
+            society: society.trim(),
+            area: area.trim(),
+            registeredBy,
           },
-        },
-      };
-      db.families[famId] = newFamily;
-      saveLocalDB(clinicId, db);
-      showToast(`Family ${famId} registered!`);
-      apiFetch('/families', { method: 'POST', body: newFamily }).catch(() => {});
+        });
+        showToast('Family updated in database.');
+        setEditingFamId(null);
+      } else {
+        await apiFetch('/families', {
+          method: 'POST',
+          body: {
+            famId,
+            headName: headName.trim(),
+            age: age.trim(),
+            bloodGroup,
+            allergy: allergy.trim(),
+            phone: phone.trim(),
+            society: society.trim(),
+            area: area.trim(),
+            registeredBy,
+          },
+        });
+        showToast(`Family ${famId} registered in database!`);
+      }
+      resetForm();
+      await loadFamilies();
+    } catch (err) {
+      showToast(err.message || 'Failed to save family to database', 'error');
     }
-    resetForm();
-    loadFamilies();
   };
 
   const resetForm = () => {
     setHeadName(''); setAge(''); setBloodGroup(''); setAllergy('');
     setPhone(''); setSociety(''); setArea(''); setRegisteredBy('Self (Head of Family)');
     setEditingFamId(null);
-    const db = getLocalDB(clinicId);
-    const list = Object.values(db.families || {});
-    const nextSeq = list.length > 0 ? Math.max(...list.map((f) => Number(f.sequence || 0))) + 1 : 1;
+    const nextSeq = families.length > 0 ? Math.max(...families.map((f) => Number(f.sequence || 0))) + 1 : 1;
     setSequence(nextSeq);
     setGeneratedFamId(generateFamilyId(clinicId, currentYear, nextSeq));
     setTimeout(() => headNameRef.current?.focus(), 100);
   };
 
   const handleEdit = (fam) => {
-    setEditingFamId(fam.id || fam.famId);
+    const id = fam.id || fam.famId;
+    setEditingFamId(id);
     setHeadName(fam.headName || '');
     setAge(fam.age || '');
     setBloodGroup(fam.bloodGroup || '');
@@ -121,18 +125,19 @@ export default function FamilyRegView({ onNavigate, onSelectPatient }) {
     setSociety(fam.society || '');
     setArea(fam.area || '');
     setRegisteredBy(fam.registeredBy || 'Self (Head of Family)');
-    setGeneratedFamId(fam.id || fam.famId);
+    setGeneratedFamId(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (famId) => {
-    if (!window.confirm(`Delete family ${famId} and all member records?`)) return;
-    const db = getLocalDB(clinicId);
-    delete db.families[famId];
-    saveLocalDB(clinicId, db);
-    showToast('Family deleted.');
-    apiFetch(`/families/${famId}`, { method: 'DELETE' }).catch(() => {});
-    loadFamilies();
+  const handleDelete = async (famId) => {
+    if (!window.confirm(`Delete family ${famId} and all member records from database?`)) return;
+    try {
+      await apiFetch(`/families/${famId}`, { method: 'DELETE' });
+      showToast(`Family ${famId} deleted from database.`);
+      await loadFamilies();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete family', 'error');
+    }
   };
 
   const filtered = families.filter((f) => {

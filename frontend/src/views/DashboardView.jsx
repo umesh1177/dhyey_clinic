@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, getLocalDB, fmtMoney, fmtDate, todayISO } from '../services/api';
+import { apiFetch, fmtMoney, fmtDate, todayISO } from '../services/api';
 
 const DATE_OPTS = [
   { key: 'today', label: 'Today' },
@@ -48,13 +48,14 @@ export default function DashboardView({ onNavigate }) {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const db = getLocalDB(clinicId);
+      const res = await apiFetch('/families');
+      const famList = res.data || [];
       const { from, to } = getDateRange();
       const pats = [];
       const visits = [];
       const fups = [];
 
-      Object.values(db.families || {}).forEach((f) => {
+      famList.forEach((f) => {
         Object.values(f.patients || {}).forEach((p) => {
           pats.push({ ...p, famHead: f.headName, famId: f.id || f.famId, famDue: f.due || 0 });
           (p.visits || []).forEach((v) => {
@@ -71,10 +72,7 @@ export default function DashboardView({ onNavigate }) {
         });
       });
 
-      (db.followUps || []).forEach((fu) => fups.push(fu));
-
       const inRange = visits.filter((v) => v.date >= from && v.date <= to);
-      const today = todayISO();
 
       const collectionInRange = inRange.reduce((a, v) => a + (Number(v.received) || 0), 0);
       const billedInRange = inRange.reduce((a, v) => a + (Number(v.charge) || 0), 0);
@@ -90,7 +88,7 @@ export default function DashboardView({ onNavigate }) {
         billed: billedInRange || 3300,
         due: dueInRange || 550,
         totalPatients: pats.length || 16,
-        totalFamilies: Object.keys(db.families || {}).length || 6,
+        totalFamilies: famList.length || 6,
         totalDue: totalDueAll || 2100,
         defaulters: defaulters || 5,
       });

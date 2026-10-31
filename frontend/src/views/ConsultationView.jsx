@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getLocalDB,
-  saveLocalDB,
   apiFetch,
   todayISO,
   nowTime,
@@ -130,15 +128,34 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
     if (initialSelection?.patientId) setPatientId(initialSelection.patientId);
   }, [initialSelection]);
 
+  const [allFamilies, setAllFamilies] = useState([]);
+
+  useEffect(() => {
+    loadAllFamilies();
+  }, [clinicId]);
+
+  const loadAllFamilies = async () => {
+    try {
+      const res = await apiFetch('/families');
+      setAllFamilies(res.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => { loadPatientData(); }, [familyId, patientId, clinicId]);
 
-  const loadPatientData = () => {
+  const loadPatientData = async () => {
     if (!familyId || !patientId) { setActivePatient(null); setActiveFamily(null); return; }
-    const db  = getLocalDB(clinicId);
-    const fam = db.families?.[familyId] || Object.values(db.families || {}).find(f => f.id === familyId || f.famId === familyId);
-    const pat = fam?.patients?.[patientId] || Object.values(fam?.patients || {}).find(p => p.id === patientId || p.patId === patientId);
-    setActiveFamily(fam || null);
-    setActivePatient(pat || null);
+    try {
+      const res = await apiFetch(`/families/${familyId}`);
+      const fam = res.data;
+      const pat = fam?.patients?.[patientId] || Object.values(fam?.patients || {}).find(p => (p.id || p.patId) === patientId);
+      setActiveFamily(fam || null);
+      setActivePatient(pat || null);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   /* ── Treatment handlers ─────────────────────────────────────────────── */
@@ -183,24 +200,25 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   };
 
   /* ── Save ───────────────────────────────────────────────────────────── */
-  const handleSaveVisit = (andPrint = false) => {
+  const handleSaveVisit = async (andPrint = false) => {
     if (!activePatient || !activeFamily) { showToast('Please select a patient first.', 'error'); return; }
 
     const cleanTx  = treatment.filter(t => t.name.trim() !== '');
     const cleanRx  = prescription.filter(p => p.name.trim() !== '');
-    const db       = getLocalDB(clinicId);
-    const fam      = db.families[activeFamily.id || activeFamily.famId];
-    const pat      = fam.patients[activePatient.id || activePatient.patId];
-    if (!pat.visits) pat.visits = [];
+    const famId    = activeFamily.id || activeFamily.famId;
+    const patId    = activePatient.id || activePatient.patId;
 
+    const existingVisits = activePatient.visits || [];
     const visitNum = editingCaseId
-      ? pat.visits.find(v => v.caseId === editingCaseId)?.visitNum || 1
-      : pat.visits.length + 1;
+      ? existingVisits.find(v => v.caseId === editingCaseId)?.visitNum || 1
+      : existingVisits.length + 1;
 
-    const caseId = editingCaseId || makeCaseId(activeFamily.id || activeFamily.famId, activePatient.id || activePatient.patId, visitNum);
+    const caseId = editingCaseId || makeCaseId(famId, patId, visitNum);
 
     const visitData = {
       caseId, visitNum,
+      familyId: famId,
+      patientId: patId,
       date: visitDate, time: visitTime,
       bp, sugar, otherVitals: other,
       reference, investigation: investigation.trim(),
@@ -211,27 +229,28 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
       labReportFile: labReportFile ? labReportFile.name : null,
     };
 
-    if (editingCaseId) {
-      const idx = pat.visits.findIndex(v => v.caseId === editingCaseId);
-      if (idx !== -1) pat.visits[idx] = visitData;
-      showToast(`Case #${caseId} updated successfully.`);
-    } else {
-      pat.visits.unshift(visitData);
-      showToast(`New Visit #${visitNum} recorded successfully!`);
-      if (complaint.trim()) addSharedMasterItem('complaints', { name: complaint.trim(), category: 'General' });
-      if (investigation.trim()) addSharedMasterItem('investigations', { name: investigation.trim(), category: 'General' });
+    try {
+      if (editingCaseId) {
+        await apiFetch(`/consultations/${editingCaseId}`, {
+          method: 'PUT',
+          body: visitData,
+        });
+        showToast(`Case #${caseId} updated in database.`);
+      } else {
+        await apiFetch('/consultations', {
+          method: 'POST',
+          body: visitData,
+        });
+        showToast(`New Visit #${visitNum} saved to database!`);
+      }
+
+      await loadPatientData();
+      await loadAllFamilies();
+      resetVisitForm();
+      if (andPrint) setPrintingVisit(visitData);
+    } catch (err) {
+      showToast(err.message || 'Failed to save visit to database', 'error');
     }
-
-    saveLocalDB(clinicId, db);
-    loadPatientData();
-
-    apiFetch('/consultations', {
-      method: editingCaseId ? 'PUT' : 'POST',
-      body: { ...visitData, familyId: activeFamily.id || activeFamily.famId, patientId: activePatient.id || activePatient.patId },
-    }).catch(() => {});
-
-    resetVisitForm();
-    if (andPrint) setPrintingVisit(visitData);
   };
 
   const resetVisitForm = () => {
@@ -260,26 +279,29 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteVisit = caseId => {
-    if (!window.confirm(`Delete clinical visit case #${caseId}?`)) return;
-    const db  = getLocalDB(clinicId);
-    const fam = db.families[activeFamily.id || activeFamily.famId];
-    const pat = fam.patients[activePatient.id || activePatient.patId];
-    pat.visits = pat.visits.filter(v => v.caseId !== caseId);
-    saveLocalDB(clinicId, db);
-    showToast('Visit case entry deleted.');
-    loadPatientData();
-    apiFetch(`/consultations/${caseId}`, { method: 'DELETE' }).catch(() => {});
+  const handleDeleteVisit = async (caseId) => {
+    if (!window.confirm(`Delete clinical visit case #${caseId} from database?`)) return;
+    try {
+      await apiFetch(`/consultations/${caseId}`, { method: 'DELETE' });
+      showToast('Visit case entry deleted from database.');
+      await loadPatientData();
+      await loadAllFamilies();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete visit', 'error');
+    }
   };
 
-  const handleDeletePatient = () => {
-    if (!window.confirm(`Permanently delete patient "${activePatient.name}" and all their visit records?`)) return;
-    const db  = getLocalDB(clinicId);
-    const fam = db.families[activeFamily.id || activeFamily.famId];
-    delete fam.patients[activePatient.id || activePatient.patId];
-    saveLocalDB(clinicId, db);
-    showToast('Patient record deleted.');
-    setFamilyId(null); setPatientId(null);
+  const handleDeletePatient = async () => {
+    if (!window.confirm(`Permanently delete patient "${activePatient.name}" and all records from database?`)) return;
+    try {
+      const patId = activePatient.id || activePatient.patId;
+      await apiFetch(`/patients/${patId}`, { method: 'DELETE' });
+      showToast('Patient record deleted from database.');
+      setFamilyId(null); setPatientId(null);
+      await loadAllFamilies();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete patient', 'error');
+    }
   };
 
   /* ── Search ─────────────────────────────────────────────────────────── */
@@ -288,13 +310,12 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
     setSearchQuery(q);
     const query = q.trim().toLowerCase();
     if (!query) { setSearchResults([]); return; }
-    const db = getLocalDB(clinicId);
     const results = [];
-    for (const f of Object.values(db.families || {})) {
+    for (const f of allFamilies) {
       for (const p of Object.values(f.patients || {})) {
         if (
-          p.name.toLowerCase().includes(query) ||
-          (p.id && p.id.toLowerCase().includes(query)) ||
+          (p.name || '').toLowerCase().includes(query) ||
+          (p.patId && p.patId.toLowerCase().includes(query)) ||
           (f.headName && f.headName.toLowerCase().includes(query)) ||
           (p.phone && p.phone.includes(query))
         ) {
@@ -324,9 +345,8 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   const visitNum = (activePatient?.visits?.length || 0) + 1;
 
   const recentPatients = () => {
-    const db = getLocalDB(clinicId);
     const results = [];
-    for (const f of Object.values(db.families || {})) {
+    for (const f of allFamilies) {
       for (const p of Object.values(f.patients || {})) {
         results.push({
           familyId: f.id || f.famId, patientId: p.id || p.patId,

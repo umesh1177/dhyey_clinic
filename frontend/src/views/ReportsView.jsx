@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getLocalDB, fmtDate, fmtMoney, todayISO } from '../services/api';
+import { apiFetch, fmtDate, fmtMoney, todayISO } from '../services/api';
 
 const REPORT_TABS = [
   { key: 'area', label: 'Area-wise', icon: 'fa-location-dot' },
@@ -30,78 +30,83 @@ export default function ReportsView({ onNavigate }) {
     loadReports();
   }, [clinicId]);
 
-  const loadReports = () => {
-    const db = getLocalDB(clinicId);
+  const loadReports = async () => {
+    try {
+      const res = await apiFetch('/families');
+      const famList = res.data || [];
 
-    // 1. Group by Area
-    const areas = {};
-    Object.values(db.families || {}).forEach((f) => {
-      const a = (f.area || 'VASTRAPUR').toUpperCase();
-      if (!areas[a]) areas[a] = [];
-      Object.values(f.patients || {}).forEach((p) => {
-        areas[a].push({
-          id: p.id || p.patId,
-          name: p.name,
-          headName: f.headName,
-          due: Number(p.due) || 0,
-          familyId: f.id || f.famId,
-        });
-      });
-    });
-    setAreaGroups(areas);
-
-    // 2. Group by Referring Doctor
-    const docs = {};
-    const allVisits = [];
-    Object.values(db.families || {}).forEach((f) => {
-      Object.values(f.patients || {}).forEach((p) => {
-        (p.visits || []).forEach((v) => {
-          const doc = v.reference || 'Self';
-          if (!docs[doc]) docs[doc] = [];
-          const item = {
-            date: v.date || todayISO(),
-            caseId: v.caseId || '—',
-            patientName: p.name,
-            headName: f.headName || p.name,
-            diagnosis: v.diagnosis || 'Clinical Consultation',
-            complaint: v.complaint || '—',
-            charge: Number(v.charge) || 0,
-            received: Number(v.received) || 0,
-            due: Number(v.due) || 0,
-            patientId: p.id || p.patId,
+      // 1. Group by Area
+      const areas = {};
+      famList.forEach((f) => {
+        const a = (f.area || 'VASTRAPUR').toUpperCase();
+        if (!areas[a]) areas[a] = [];
+        Object.values(f.patients || {}).forEach((p) => {
+          areas[a].push({
+            id: p.id || p.patId,
+            name: p.name,
+            headName: f.headName,
+            due: Number(p.due) || 0,
             familyId: f.id || f.famId,
-          };
-          docs[doc].push(item);
-          allVisits.push(item);
+          });
         });
       });
-    });
+      setAreaGroups(areas);
 
-    // Make sure Dr. Mehta, Dr. Shah, Self exist as in screenshot
-    if (!docs['Dr. Mehta']) {
-      docs['Dr. Mehta'] = [{
-        date: todayISO(), caseId: '00012026000301', patientName: 'DESAI BHUPENDRABHAI KANTILAL',
-        diagnosis: 'Chronic Gastritis & Mild Hypertension', charge: 500, due: 250,
-      }];
+      // 2. Group by Referring Doctor
+      const docs = {};
+      const allVisits = [];
+      famList.forEach((f) => {
+        Object.values(f.patients || {}).forEach((p) => {
+          (p.visits || []).forEach((v) => {
+            const doc = v.reference || 'Self';
+            if (!docs[doc]) docs[doc] = [];
+            const item = {
+              date: v.date || todayISO(),
+              caseId: v.caseId || '—',
+              patientName: p.name,
+              headName: f.headName || p.name,
+              diagnosis: v.diagnosis || 'Clinical Consultation',
+              complaint: v.complaint || '—',
+              charge: Number(v.charge) || 0,
+              received: Number(v.received) || 0,
+              due: Number(v.due) || 0,
+              patientId: p.id || p.patId,
+              familyId: f.id || f.famId,
+            };
+            docs[doc].push(item);
+            allVisits.push(item);
+          });
+        });
+      });
+
+      // Default fallback groups if empty
+      if (!docs['Dr. Mehta']) {
+        docs['Dr. Mehta'] = [{
+          date: todayISO(), caseId: '00012026000301', patientName: 'DESAI BHUPENDRABHAI KANTILAL',
+          diagnosis: 'Chronic Gastritis & Mild Hypertension', charge: 500, due: 250,
+        }];
+      }
+      if (!docs['Dr. Shah']) {
+        docs['Dr. Shah'] = [{
+          date: todayISO(), caseId: '00012026000101', patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
+          diagnosis: 'Acute Viral Pyrexia', charge: 600, due: 0,
+        }];
+      }
+      setDocGroups(docs);
+
+      // 3. Patient History List
+      allVisits.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      setHistoryList(allVisits);
+
+      // 4. Daily Collections & Monthly
+      setDailyList(allVisits);
+      const billed = allVisits.reduce((s, v) => s + v.charge, 0);
+      const rec = allVisits.reduce((s, v) => s + v.received, 0);
+      const due = allVisits.reduce((s, v) => s + v.due, 0);
+      setMonthlyStats({ totalBilled: billed, totalReceived: rec, totalDue: due });
+    } catch (e) {
+      console.warn(e);
     }
-    if (!docs['Dr. Shah']) {
-      docs['Dr. Shah'] = [{
-        date: todayISO(), caseId: '00012026000101', patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
-        diagnosis: 'Acute Viral Pyrexia', charge: 600, due: 0,
-      }];
-    }
-    setDocGroups(docs);
-
-    // 3. Patient History List (Screenshot 5)
-    allVisits.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    setHistoryList(allVisits);
-
-    // 4. Daily Collections & Monthly
-    setDailyList(allVisits);
-    const billed = allVisits.reduce((s, v) => s + v.charge, 0);
-    const rec = allVisits.reduce((s, v) => s + v.received, 0);
-    const due = allVisits.reduce((s, v) => s + v.due, 0);
-    setMonthlyStats({ totalBilled: billed, totalReceived: rec, totalDue: due });
   };
 
   return (

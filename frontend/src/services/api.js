@@ -5,9 +5,7 @@
  * =========================================================
  */
 
-const API_BASE_URL = window.location.origin.includes('5000') || window.location.origin.includes('5173')
-  ? ''
-  : window.location.port === '' || window.location.port === '80'
+const API_BASE_URL = (typeof window !== 'undefined' && (window.location.port === '5000' || window.location.port === '5173'))
   ? ''
   : 'http://localhost:5000';
 
@@ -124,8 +122,8 @@ export async function apiFetch(endpoint, options = {}) {
     }
     return data;
   } catch (err) {
-    console.warn(`[API Network fallback for ${endpoint}]:`, err.message);
-    return fallbackLocalHandler(endpoint, config);
+    console.error(`[API Database Error on ${endpoint}]:`, err.message);
+    throw err;
   }
 }
 
@@ -784,12 +782,10 @@ export function saveLocalDB(clinicId = 'demo', data) {
 }
 
 /* ---- Shared Master Data Helpers ---- */
+const memoryMasterCache = {};
+
 export function getSharedMasterCollection(type) {
-  const key = `clinic_master_${type}`;
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
+  if (memoryMasterCache[type]) return memoryMasterCache[type];
 
   let defaults = [];
   if (type === 'complaints') defaults = defaultMasterComplaints;
@@ -799,18 +795,30 @@ export function getSharedMasterCollection(type) {
   else if (type === 'relations') defaults = defaultMasterRelations;
   else if (type === 'areas') defaults = defaultMasterAreas;
 
-  localStorage.setItem(key, JSON.stringify(defaults));
+  memoryMasterCache[type] = defaults;
   return defaults;
+}
+
+export async function fetchMasterCollectionFromDB(type) {
+  try {
+    const res = await apiFetch(`/masters/${type}`);
+    if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      memoryMasterCache[type] = res.data;
+      return res.data;
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+  return getSharedMasterCollection(type);
 }
 
 export function addSharedMasterItem(type, item) {
   const list = getSharedMasterCollection(type);
-  const exists = list.some((i) => i.name.toLowerCase() === item.name.toLowerCase());
+  const exists = list.some((i) => (i.name || '').toLowerCase() === (item.name || '').toLowerCase());
   if (!exists) {
     const newItem = { id: `${type}_${uid()}`, ...item, createdAt: todayISO() };
     list.push(newItem);
-    localStorage.setItem(`clinic_master_${type}`, JSON.stringify(list));
-    // Asynchronously sync to backend
+    memoryMasterCache[type] = list;
     apiFetch(`/masters/${type}`, {
       method: 'POST',
       body: { items: list },
@@ -819,7 +827,7 @@ export function addSharedMasterItem(type, item) {
 }
 
 export function saveSharedMasterCollection(type, items) {
-  localStorage.setItem(`clinic_master_${type}`, JSON.stringify(items));
+  memoryMasterCache[type] = items;
   apiFetch(`/masters/${type}`, {
     method: 'POST',
     body: { items },

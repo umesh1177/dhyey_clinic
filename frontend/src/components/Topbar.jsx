@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { fmtDate, todayISO, getLocalDB, showToast } from '../services/api';
+import { fmtDate, todayISO, apiFetch, showToast } from '../services/api';
 
 export default function Topbar({ onToggleSidebar, onSelectPatient, theme, onToggleTheme }) {
   const { session, activeClinic, switchClinic, addClinic, logout } = useAuth();
@@ -47,7 +47,7 @@ export default function Topbar({ onToggleSidebar, onSelectPatient, theme, onTogg
   }, []);
 
   // Live search handler
-  const handleSearchChange = (e) => {
+  const handleSearchChange = async (e) => {
     const q = e.target.value;
     setSearchQuery(q);
 
@@ -58,38 +58,45 @@ export default function Topbar({ onToggleSidebar, onSelectPatient, theme, onTogg
       return;
     }
 
-    const db = getLocalDB(session?.profile?.activeClinicId || 'demo');
-    const results = [];
+    try {
+      const res = await apiFetch('/families');
+      const famList = res.data || [];
+      const results = [];
 
-    for (const fam of Object.values(db.families || {})) {
-      const famMatches =
-        (fam.id && fam.id.toLowerCase().includes(query)) ||
-        (fam.headName && fam.headName.toLowerCase().includes(query)) ||
-        (fam.phone && fam.phone.includes(query)) ||
-        (fam.area && fam.area.toLowerCase().includes(query));
+      for (const fam of famList) {
+        const famMatches =
+          (fam.id && fam.id.toLowerCase().includes(query)) ||
+          (fam.famId && fam.famId.toLowerCase().includes(query)) ||
+          (fam.headName && fam.headName.toLowerCase().includes(query)) ||
+          (fam.phone && fam.phone.includes(query)) ||
+          (fam.area && fam.area.toLowerCase().includes(query));
 
-      for (const pat of Object.values(fam.patients || {})) {
-        const patMatches =
-          famMatches ||
-          (pat.id && pat.id.toLowerCase().includes(query)) ||
-          (pat.name && pat.name.toLowerCase().includes(query)) ||
-          (pat.phone && pat.phone.includes(query));
+        for (const pat of Object.values(fam.patients || {})) {
+          const patMatches =
+            famMatches ||
+            (pat.id && pat.id.toLowerCase().includes(query)) ||
+            (pat.patId && pat.patId.toLowerCase().includes(query)) ||
+            (pat.name && pat.name.toLowerCase().includes(query)) ||
+            (pat.phone && pat.phone.includes(query));
 
-        if (patMatches) {
-          results.push({
-            familyId: fam.id || fam.famId,
-            headName: fam.headName,
-            patientId: pat.id || pat.patId,
-            patientName: pat.name,
-            relation: pat.relation,
-            area: pat.area || fam.area,
-          });
+          if (patMatches) {
+            results.push({
+              familyId: fam.id || fam.famId,
+              headName: fam.headName,
+              patientId: pat.id || pat.patId,
+              patientName: pat.name,
+              relation: pat.relation,
+              area: pat.area || fam.area,
+            });
+          }
         }
       }
-    }
 
-    setSearchResults(results);
-    setSearchDropdownOpen(true);
+      setSearchResults(results.slice(0, 10));
+      setSearchDropdownOpen(results.length > 0);
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   const handleSelectResult = (res) => {

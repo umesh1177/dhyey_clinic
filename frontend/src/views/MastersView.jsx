@@ -187,27 +187,32 @@ export default function MastersView() {
     loadTabItems(activeTab);
   }, [activeTab]);
 
-  const loadTabItems = (tabKey) => {
+  const loadTabItems = async (tabKey) => {
+    try {
+      const res = await apiFetch(`/masters/${tabKey}`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        if (tabKey === 'dietary') {
+          setDietaryItems(res.data);
+        } else {
+          setGenericItems(res.data);
+        }
+        return;
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+
     if (tabKey === 'dietary') {
-      try {
-        const raw = localStorage.getItem('clinic_master_dietary');
-        if (raw) setDietaryItems(JSON.parse(raw));
-        else setDietaryItems(DEFAULT_DIETARY);
-      } catch (e) {
-        setDietaryItems(DEFAULT_DIETARY);
-      }
+      setDietaryItems(DEFAULT_DIETARY);
     } else {
-      let list = getSharedMasterCollection(tabKey);
-      if (!list || list.length === 0) {
-        if (tabKey === 'complaints') list = DEFAULT_COMPLAINTS;
-        else if (tabKey === 'investigations') list = DEFAULT_INVESTIGATIONS;
-        else if (tabKey === 'areas') list = DEFAULT_AREAS;
-        else if (tabKey === 'medicines') list = DEFAULT_MEDICINES;
-        else if (tabKey === 'allergies') list = DEFAULT_ALLERGIES;
-        else if (tabKey === 'relations') list = DEFAULT_RELATIONS;
-        else if (tabKey === 'societies') list = DEFAULT_SOCIETIES;
-        saveSharedMasterCollection(tabKey, list);
-      }
+      let list = [];
+      if (tabKey === 'complaints') list = DEFAULT_COMPLAINTS;
+      else if (tabKey === 'investigations') list = DEFAULT_INVESTIGATIONS;
+      else if (tabKey === 'areas') list = DEFAULT_AREAS;
+      else if (tabKey === 'medicines') list = DEFAULT_MEDICINES;
+      else if (tabKey === 'allergies') list = DEFAULT_ALLERGIES;
+      else if (tabKey === 'relations') list = DEFAULT_RELATIONS;
+      else if (tabKey === 'societies') list = DEFAULT_SOCIETIES;
       setGenericItems(list || []);
     }
   };
@@ -234,7 +239,7 @@ export default function MastersView() {
     setIsModalOpen(true);
   };
 
-  const handleModalSave = (e) => {
+  const handleModalSave = async (e) => {
     e.preventDefault();
 
     if (activeTab === 'dietary') {
@@ -263,7 +268,11 @@ export default function MastersView() {
         showToast(`Added dietary shortcut +${newItem.code}`);
       }
       setDietaryItems(updated);
-      localStorage.setItem('clinic_master_dietary', JSON.stringify(updated));
+      try {
+        await apiFetch('/masters/dietary', { method: 'POST', body: { items: updated } });
+      } catch (err) {
+        console.warn(err);
+      }
     } else {
       let updated;
       if (editingItem) {
@@ -288,27 +297,39 @@ export default function MastersView() {
         showToast(`Added ${newItem.name || newItem.code}`);
       }
       setGenericItems(updated);
-      saveSharedMasterCollection(activeTab, updated);
+      try {
+        await apiFetch(`/masters/${activeTab}`, { method: 'POST', body: { items: updated } });
+      } catch (err) {
+        console.warn(err);
+      }
     }
 
     setIsModalOpen(false);
     setEditingItem(null);
   };
 
-  const handleDeleteDietary = (id) => {
-    if (!window.confirm('Delete this dietary template?')) return;
+  const handleDeleteDietary = async (id) => {
+    if (!window.confirm('Delete this dietary template from database?')) return;
     const updated = dietaryItems.filter(i => i.id !== id);
     setDietaryItems(updated);
-    localStorage.setItem('clinic_master_dietary', JSON.stringify(updated));
-    showToast('Dietary template removed.');
+    try {
+      await apiFetch('/masters/dietary', { method: 'POST', body: { items: updated } });
+    } catch (err) {
+      console.warn(err);
+    }
+    showToast('Dietary template removed from database.');
   };
 
-  const handleDeleteGeneric = (id) => {
-    if (!window.confirm('Delete this master catalogue entry?')) return;
+  const handleDeleteGeneric = async (id) => {
+    if (!window.confirm('Delete this master catalogue entry from database?')) return;
     const updated = genericItems.filter(i => i.id !== id);
     setGenericItems(updated);
-    saveSharedMasterCollection(activeTab, updated);
-    showToast('Entry removed.');
+    try {
+      await apiFetch(`/masters/${activeTab}`, { method: 'POST', body: { items: updated } });
+    } catch (err) {
+      console.warn(err);
+    }
+    showToast('Entry removed from database.');
   };
 
   const currentTabInfo = MASTER_TABS.find(t => t.key === activeTab) || MASTER_TABS[0];

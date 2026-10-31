@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getLocalDB,
-  saveLocalDB,
   apiFetch,
   todayISO,
   fmtDate,
@@ -22,10 +20,7 @@ export default function CertificatesView() {
 
   const [certificates, setCertificates] = useState([]);
   const [certTemplate, setCertTemplate] = useState('fitness');
-  const [templates, setTemplates] = useState(() => {
-    const db = getLocalDB(clinicId);
-    return db.certificateTemplates?.length ? db.certificateTemplates : DEFAULT_TEMPLATES;
-  });
+  const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
 
   // Modal states
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
@@ -67,38 +62,60 @@ export default function CertificatesView() {
 
   useEffect(() => {
     loadCertificates();
+    loadTemplates();
   }, [clinicId]);
 
-  const loadCertificates = () => {
-    const db = getLocalDB(clinicId);
-    let list = db.certificates || [];
-    if (list.length === 0) {
-      list = [
-        {
-          certNo: 'CERT-2026-0001',
-          patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
-          patientAge: '46',
-          patientGender: 'Male',
-          templateType: 'Medical Fitness Certificate',
-          diagnosis: 'Acute Viral Pyrexia',
-          validity: '31/10/2026 → 31/10/2026 (1d)',
-          issuedDate: '31/10/2026',
-          status: 'Issued',
-        },
-        {
-          certNo: 'CERT-2026-0002',
-          patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
-          patientAge: '46',
-          patientGender: 'Male',
-          templateType: 'Medical Fitness Certificate',
-          diagnosis: 'Acute Viral Pyrexia',
-          validity: '31/10/2026 → 31/10/2026 (1d)',
-          issuedDate: '31/10/2026',
-          status: 'Issued',
-        },
-      ];
+  const loadTemplates = async () => {
+    try {
+      const res = await apiFetch('/certificates/templates');
+      if (res.data && res.data.length > 0) {
+        setTemplates(res.data.map(t => ({
+          key: t._id || t.key || t.templateName,
+          label: t.templateName || t.label,
+          heading: t.title || t.heading,
+          body: t.body,
+          category: t.category,
+        })));
+      }
+    } catch (err) {
+      console.warn(err);
     }
-    setCertificates(list);
+  };
+
+  const loadCertificates = async () => {
+    try {
+      const res = await apiFetch('/certificates');
+      let list = res.data || [];
+      if (list.length === 0) {
+        list = [
+          {
+            certNo: 'CERT-2026-0001',
+            patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
+            patientAge: '46',
+            patientGender: 'Male',
+            templateType: 'Medical Fitness Certificate',
+            diagnosis: 'Acute Viral Pyrexia',
+            validity: '31/10/2026 → 31/10/2026 (1d)',
+            issuedDate: '31/10/2026',
+            status: 'Issued',
+          },
+          {
+            certNo: 'CERT-2026-0002',
+            patientName: 'PATEL RAMESHBHAI GOVINDBHAI',
+            patientAge: '46',
+            patientGender: 'Male',
+            templateType: 'Medical Fitness Certificate',
+            diagnosis: 'Acute Viral Pyrexia',
+            validity: '31/10/2026 → 31/10/2026 (1d)',
+            issuedDate: '31/10/2026',
+            status: 'Issued',
+          },
+        ];
+      }
+      setCertificates(list);
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   const handleTemplateChange = (key) => {
@@ -193,14 +210,23 @@ export default function CertificatesView() {
       heading: newTplHeading.trim() || 'MEDICAL CERTIFICATE',
       body: newTplBody.trim(),
     };
-    const updated = [...templates, newTpl];
-    setTemplates(updated);
+    try {
+      await apiFetch('/certificates/templates', {
+        method: 'POST',
+        body: {
+          templateName: newTplName.trim(),
+          title: newTplHeading.trim() || 'MEDICAL CERTIFICATE',
+          body: newTplBody.trim(),
+          category: newTplCategory,
+        },
+      });
+      showToast(`Template "${newTplName}" saved to database!`);
+      await loadTemplates();
+    } catch (err) {
+      showToast(err.message || 'Failed to save template', 'error');
+    }
     setCertTemplate(key);
     setCustomBody(newTplBody.trim());
-    const db = getLocalDB(clinicId);
-    db.certificateTemplates = updated;
-    saveLocalDB(clinicId, db);
-    showToast(`Template "${newTplName}" saved!`);
     setTemplateModalOpen(false);
     setNewTplName('');
   };
@@ -232,7 +258,7 @@ export default function CertificatesView() {
       .replace(/{CLINIC_NAME}/g, clinicName);
   };
 
-  const handleIssue = (e) => {
+  const handleIssue = async (e) => {
     e.preventDefault();
     const newCert = {
       certNo,
@@ -241,18 +267,28 @@ export default function CertificatesView() {
       patientGender,
       templateType: certTemplate === 'fitness' ? 'Medical Fitness Certificate' : 'Medical Sick Leave Certificate',
       diagnosis,
+      fromDate,
+      toDate,
+      restDays: Number(restDays) || 1,
+      place,
+      customBody,
+      doctorName: docName,
       validity: `${fmtDate(fromDate)} → ${fmtDate(toDate)} (${restDays}d)`,
       issuedDate: '31/10/2026',
       status: 'Issued',
     };
 
-    const updated = [newCert, ...certificates];
-    setCertificates(updated);
-    const db = getLocalDB(clinicId);
-    db.certificates = updated;
-    saveLocalDB(clinicId, db);
-    showToast(`Medical Certificate ${certNo} issued!`);
-    window.print();
+    try {
+      await apiFetch('/certificates', {
+        method: 'POST',
+        body: newCert,
+      });
+      showToast(`Medical Certificate ${certNo} saved to database!`);
+      await loadCertificates();
+      window.print();
+    } catch (err) {
+      showToast(err.message || 'Failed to issue certificate', 'error');
+    }
   };
 
   const handleClear = () => {
@@ -262,14 +298,15 @@ export default function CertificatesView() {
     setPatientSearch('');
   };
 
-  const handleDelete = (cNo) => {
-    if (!window.confirm(`Delete certificate #${cNo}?`)) return;
-    const updated = certificates.filter(c => c.certNo !== cNo);
-    setCertificates(updated);
-    const db = getLocalDB(clinicId);
-    db.certificates = updated;
-    saveLocalDB(clinicId, db);
-    showToast('Certificate removed.');
+  const handleDelete = async (cNo) => {
+    if (!window.confirm(`Delete certificate #${cNo} from database?`)) return;
+    try {
+      await apiFetch(`/certificates/${cNo}`, { method: 'DELETE' });
+      showToast('Certificate removed from database.');
+      await loadCertificates();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete certificate', 'error');
+    }
   };
 
   return (
