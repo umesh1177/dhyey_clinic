@@ -709,6 +709,14 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             }}>
               <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: {fmtMoney(personalDue)}
             </span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span style={{ color: 'var(--text)' }}>Age {activePatient.age || '—'}</span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span style={{ color: 'var(--text)' }}>{activePatient.bloodGroup || 'O+'}</span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span style={{ color: '#dc2626', fontWeight: 700 }}>
+              Allergy: {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' ? activePatient.allergy : 'Dust / Pollen'}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12.5px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Family:</span>
@@ -724,16 +732,8 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               }}>
               <i className="fa-solid fa-triangle-exclamation" /> FAM DUE: {fmtMoney(familyDue || 300)}
             </span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ color: 'var(--text)' }}>Age {activePatient.age || '—'}</span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ color: 'var(--text)' }}>{activePatient.bloodGroup || 'O+'}</span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ color: '#dc2626', fontWeight: 700 }}>
-              Allergy: {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' ? activePatient.allergy : 'Dust / Pollen'}
-            </span>
           </div>
-        </div>
+        {/* </div> */}
 
         {/* Right: action buttons (Exact match with screenshot 5) */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -745,7 +745,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
             }}
           >
-            Delete Patient
+            Delete
           </button>
           <button
             type="button"
@@ -755,7 +755,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
             }}
           >
-            Update Patient
+            Update
           </button>
           <button
             type="button"
@@ -769,11 +769,12 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             {isFormOpen ? (
               <><i className="fa-solid fa-xmark" /> Cancel</>
             ) : (
-              <><i className="fa-solid fa-plus" /> + New Visit
+              <><i className="fa-solid fa-plus" /> New
                 <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '11px', fontWeight: 800, marginLeft: '2px' }}>F6</span>
               </>
             )}
           </button>
+        </div>
         </div>
       </div>
 
