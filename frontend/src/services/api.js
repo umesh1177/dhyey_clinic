@@ -57,14 +57,19 @@ export function expandShortcut(value, masterList) {
   if (!value) return '';
   const parts = value.split(',').map(p => p.trim());
   const lastPart = parts[parts.length - 1];
-  if (!lastPart) return value.endsWith(', ') ? value : `${value}, `;
+  if (!lastPart) return value.endsWith(', ') ? value : (value + ', ');
 
+  const lower = lastPart.toLowerCase();
   const match = (masterList || []).find(m =>
-    (m.code && m.code.toUpperCase() === lastPart.toUpperCase()) ||
-    (m.name && m.name.toLowerCase() === lastPart.toLowerCase())
+    (m.code && m.code.toLowerCase() === lower) ||
+    (m.id && m.id.toLowerCase() === lower) ||
+    (m.name && m.name.toLowerCase() === lower) ||
+    (m.code && m.code.toLowerCase().startsWith(lower)) ||
+    (m.name && m.name.toLowerCase().startsWith(lower)) ||
+    (m.name && m.name.toLowerCase().includes(lower))
   );
 
-  const expandedName = match ? (match.name || match.code) : lastPart;
+  const expandedName = match ? (match.name || match.title || match.code || lastPart) : lastPart;
   parts[parts.length - 1] = expandedName;
   return parts.filter(Boolean).join(', ') + ', ';
 }
@@ -75,11 +80,16 @@ export function expandShortcut(value, masterList) {
 export function findMasterMatch(value, masterList) {
   if (!value) return '';
   const clean = value.trim();
+  const lower = clean.toLowerCase();
   const match = (masterList || []).find(m =>
-    (m.code && m.code.toUpperCase() === clean.toUpperCase()) ||
-    (m.name && m.name.toLowerCase() === clean.toLowerCase())
+    (m.code && m.code.toLowerCase() === lower) ||
+    (m.id && m.id.toLowerCase() === lower) ||
+    (m.name && m.name.toLowerCase() === lower) ||
+    (m.code && m.code.toLowerCase().startsWith(lower)) ||
+    (m.name && m.name.toLowerCase().startsWith(lower)) ||
+    (m.name && m.name.toLowerCase().includes(lower))
   );
-  return match ? (match.name || match.code) : clean;
+  return match ? (match.name || match.title || match.code || clean) : clean;
 }
 
 /* ---- Global Toast Trigger ---- */

@@ -35,10 +35,19 @@ export const DIETARY_TRANSLATIONS = {
   },
 };
 
-export default function PrescriptionModal({ patient, visit, onClose }) {
+export default function PrescriptionModal({ patient, visit, onClose, autoPrint = false }) {
   const { session, activeClinic } = useAuth();
   const [lang, setLang] = useState('EN');
-  const [selectedDietCodes, setSelectedDietCodes] = useState(visit.dietaryCodes || ['LQ']);
+  const [selectedDietCodes, setSelectedDietCodes] = useState(visit?.dietaryCodes || ['LQ']);
+
+  React.useEffect(() => {
+    if (autoPrint) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 450);
+      return () => clearTimeout(timer);
+    }
+  }, [autoPrint]);
 
   const docName = session?.profile?.name || 'Dr. Chirag Paghdal';
   const clinicName = activeClinic?.name || 'Dhyey Clinic & Hospital';
@@ -195,6 +204,7 @@ export default function PrescriptionModal({ patient, visit, onClose }) {
 
         {/* Printable Prescription Body */}
         <div
+          id="cms-print-area"
           className="cms-print-area"
           style={{
             flex: 1,
@@ -279,6 +289,13 @@ export default function PrescriptionModal({ patient, visit, onClose }) {
                   Dx: {visit.diagnosis}
                 </span>
               )}
+            </div>
+          )}
+
+          {(visit?.complaint || visit?.investigation) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '11.5px', marginBottom: '12px', color: '#475569' }}>
+              {visit.complaint && <div><strong>Complaint:</strong> {visit.complaint}</div>}
+              {visit.investigation && <div><strong>Investigation:</strong> {visit.investigation}</div>}
             </div>
           )}
 

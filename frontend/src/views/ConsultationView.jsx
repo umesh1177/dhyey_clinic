@@ -112,6 +112,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
 
   /* print */
   const [printingVisit, setPrintingVisit] = useState(null);
+  const [autoPrint, setAutoPrint]         = useState(false);
 
   /* masters */
   const [complaintsMaster, setComplaintsMaster]         = useState([]);
@@ -693,76 +694,111 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
 
       {/* ── PATIENT HEADER BANNER ─────────────────────────────────────── */}
       <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: '10px', padding: '14px 18px', marginBottom: '14px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px',
+        background: '#ffffff',
+        border: '1.5px solid #cbd5e1',
+        borderRadius: '12px',
+        padding: '14px 20px',
+        marginBottom: '16px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '14px',
+        boxShadow: '0 2px 6px -1px rgba(0, 0, 0, 0.05)',
       }}>
-        {/* Left: name + badges */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {/* Left Side: Patient & Family Info */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* Top Line: Name, Total Due Badge, Demographics, Allergy */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
               {activePatient.name}
             </span>
             <span style={{
-              background: '#b91c1c', color: '#fff', borderRadius: '12px',
-              padding: '2px 8px', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px',
+              background: (personalDue || 0) > 0 ? '#fee2e2' : '#f0fdf4',
+              color: (personalDue || 0) > 0 ? '#b91c1c' : '#15803d',
+              border: (personalDue || 0) > 0 ? '1px solid #fecaca' : '1px solid #bbf7d0',
+              borderRadius: '14px',
+              padding: '2px 10px',
+              fontSize: '11.5px',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
             }}>
-              <i className="fa-solid fa-triangle-exclamation" /> TOTAL DUE: {fmtMoney(personalDue)}
+              {(personalDue || 0) > 0 ? <i className="fa-solid fa-triangle-exclamation" /> : <i className="fa-solid fa-circle-check" />}
+              TOTAL DUE: {fmtMoney(personalDue || 0)}
             </span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '12.5px' }}>·</span>
-            <span style={{ color: 'var(--text)' , fontSize: '12.5px'}}>Age {activePatient.age || '—'}</span>
-            <span style={{ color: 'var(--text-muted)' , fontSize: '12.5px' }}>·</span>
-            <span style={{ color: 'var(--text)' , fontSize: '12.5px' }}>{activePatient.bloodGroup || 'O+'}</span>
-            <span style={{ color: 'var(--text-muted)' , fontSize: '12.5px'}}>·</span>
-            <span style={{ color: '#dc2626', fontWeight: 700 , fontSize: '12.5px'}}>
-              Allergy: {activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none' ? activePatient.allergy : 'Dust / Pollen'}
+            <span style={{ color: '#94a3b8', fontSize: '13px' }}>·</span>
+            <span style={{ color: '#334155', fontSize: '13px', fontWeight: 600 }}>Age {activePatient.age || '—'}</span>
+            <span style={{ color: '#94a3b8', fontSize: '13px' }}>·</span>
+            <span style={{ color: '#334155', fontSize: '13px', fontWeight: 600 }}>{activePatient.bloodGroup || '—'}</span>
+            <span style={{ color: '#94a3b8', fontSize: '13px' }}>·</span>
+            <span style={{
+              color: (activePatient.allergy && activePatient.allergy.toLowerCase() !== 'none') ? '#dc2626' : '#16a34a',
+              fontWeight: 700,
+              fontSize: '13px',
+            }}>
+              Allergy: {activePatient.allergy || 'None'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12.5px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Family:</span>
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{activeFamily.headName}</span>
-            <span style={{ color: 'var(--text-muted)' }}>({activeFamily.area || activePatient.area || '—'})</span>
+
+          {/* Bottom Line: Family Head, Area, Family Due Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '13px' }}>
+            <span style={{ color: '#64748b' }}>Family:</span>
+            <span style={{ fontWeight: 800, color: '#1e293b' }}>{activeFamily.headName}</span>
+            <span style={{ color: '#64748b' }}>({activeFamily.area || activePatient.area || '—'})</span>
             <span
               onClick={() => setShowFamilyDueView(true)}
               title="Click to view Family Due Breakdown"
               style={{
-                background: '#b91c1c', color: '#fff', borderRadius: '12px',
-                padding: '2px 8px', fontSize: '11px', fontWeight: 800, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}>
-              <i className="fa-solid fa-triangle-exclamation" /> FAM DUE: {fmtMoney(familyDue || 300)}
+                background: (familyDue || 0) > 0 ? '#b91c1c' : '#059669',
+                color: '#ffffff',
+                borderRadius: '12px',
+                padding: '2px 10px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              {(familyDue || 0) > 0 && <i className="fa-solid fa-triangle-exclamation" />}
+              FAM DUE: {fmtMoney(familyDue || 0)}
             </span>
           </div>
-        {/* </div> */}
+        </div>
 
-        {/* Right: action buttons (Exact match with screenshot 5) */}
+        {/* Right Side: Action Buttons */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={handleDeletePatient}
             style={{
               background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca',
-              borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              borderRadius: '8px', padding: '7px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
             }}
           >
-            Delete
+            <i className="fa-solid fa-trash" /> Delete Patient
           </button>
           <button
             type="button"
             onClick={() => onNavigate('patient', { familyId: activeFamily.famId || activeFamily.id, editPatientId: activePatient.patId || activePatient.id, patientId: activePatient.patId || activePatient.id })}
             style={{
               background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0',
-              borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              borderRadius: '8px', padding: '7px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px'
             }}
           >
-            Update
+            <i className="fa-solid fa-user-pen" /> Update Patient
           </button>
           <button
             type="button"
             onClick={() => { if (isFormOpen) resetVisitForm(); else setIsFormOpen(true); }}
             style={{
               background: isFormOpen ? '#dc2626' : 'var(--primary)', color: '#fff', border: 'none',
-              borderRadius: '8px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              borderRadius: '8px', padding: '7px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '6px',
             }}
           >
@@ -774,7 +810,6 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               </>
             )}
           </button>
-        </div>
         </div>
       </div>
 
@@ -821,11 +856,12 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
           </div>
 
-          {/* ── VITALS ROW (6 columns) ── */}
+          {/* ── VITALS & CLINICAL ASSESSMENT ── */}
+          {/* Row 1: Vitals */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '85px 85px 85px 95px 1.4fr 1.8fr',
-            gap: '8px', marginBottom: '14px',
+            gridTemplateColumns: '90px 90px 90px 90px 140px 1fr',
+            gap: '8px', marginBottom: '10px',
           }}>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>BP</label>
@@ -834,28 +870,59 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>SUGAR</label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="mg/dL"
                 value={sugar} onChange={e => setSugar(e.target.value)} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER</label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
-                value={other} onChange={e => setOther(e.target.value)} />
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>WEIGHT</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="kg"
+                value={weight} onChange={e => setWeight(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>PULSE</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="bpm"
+                value={pulse} onChange={e => setPulse(e.target.value)} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>REFERENCE</label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder=""
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="Self / Dr. Name"
                 value={reference} onChange={e => setReference(e.target.value)} />
             </div>
             <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER VITALS</label>
+              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="Temp, SpO2, etc."
+                value={other} onChange={e => setOther(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Row 2: Clinical Assessment (Diagnosis, Investigation, Complaint) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1.2fr 1.4fr 1.6fr',
+            gap: '8px', marginBottom: '14px',
+          }}>
+            <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(SHORTCUT + ENTER FOR COMMA)</span>
+                DIAGNOSIS (DX)
               </label>
               <input
                 type="text"
                 className="cms-input"
                 style={{ height: '30px', fontSize: '12px' }}
-                placeholder="e.g. CBC, LFT, RFT..."
+                placeholder="e.g. Acute Viral Pyrexia, URTI..."
+                value={diagnosis}
+                onChange={e => setDiagnosis(e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(ENTER FOR COMMA)</span>
+              </label>
+              <input
+                type="text"
+                className="cms-input"
+                style={{ height: '30px', fontSize: '12px' }}
+                placeholder="e.g. CBC, FBS, LFT..."
                 value={investigation}
                 onChange={e => setInvestigation(e.target.value)}
                 onKeyDown={e => {
@@ -869,13 +936,13 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(SHORTCUT + ENTER FOR COMMA)</span>
+                COMPLAINT (SYMPTOMS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(ENTER FOR COMMA)</span>
               </label>
               <input
                 type="text"
                 className="cms-input"
                 style={{ height: '30px', fontSize: '12px' }}
-                placeholder="e.g. FEV, COUGH, HEAD..."
+                placeholder="e.g. Fever, Cough, Headache..."
                 value={complaint}
                 onChange={e => setComplaint(e.target.value)}
                 onKeyDown={e => {
@@ -986,7 +1053,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                           handleTreatmentChange(i, 'name', findMasterMatch(t.name, medicinesMaster));
                         }
                       }}
-                      list="consultation-medicines-list"
+                      list="medicines-options"
                     />
                     <input
                       type="text"
@@ -1072,12 +1139,15 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 type="number"
                 min="0"
                 className="cms-input font-mono"
-                style={{ width: '80px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
-                value={charge}
+                style={{ width: '85px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
+                placeholder="0"
+                value={charge === 0 || charge === '' ? '' : charge}
+                onFocus={e => e.target.select()}
                 onChange={e => {
-                  const val = Math.max(0, Number(e.target.value) || 0);
+                  const raw = e.target.value;
+                  const val = raw === '' ? '' : Math.max(0, Number(raw) || 0);
                   setCharge(val);
-                  setDue(Math.max(0, val - received));
+                  setDue(Math.max(0, (Number(val) || 0) - (Number(received) || 0)));
                 }}
               />
             </div>
@@ -1085,13 +1155,21 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
               <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>PAID ₹</span>
               <input
                 type="number"
+                min="0"
                 className="cms-input font-mono"
-                style={{ width: '70px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
-                value={received}
-                onChange={e => handleReceivedChange(e.target.value)}
+                style={{ width: '85px', height: '30px', fontSize: '12.5px', fontWeight: 700, textAlign: 'center' }}
+                placeholder="0"
+                value={received === 0 || received === '' ? '' : received}
+                onFocus={e => e.target.select()}
+                onChange={e => {
+                  const raw = e.target.value;
+                  const val = raw === '' ? '' : Math.max(0, Number(raw) || 0);
+                  setReceived(val);
+                  setDue(Math.max(0, (Number(charge) || 0) - (Number(val) || 0)));
+                }}
               />
             </div>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: due > 0 ? '#dc2626' : 'var(--text)' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: due > 0 ? '#dc2626' : '#16a34a' }}>
               DUE: ₹{due}
             </span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
@@ -1115,6 +1193,17 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 }}
               >
                 <i className="fa-solid fa-print" /> Save &amp; Print
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveVisit(false)}
+                style={{
+                  background: 'var(--primary)', color: '#fff', border: 'none',
+                  borderRadius: '6px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <i className="fa-solid fa-floppy-disk" /> Save Case
               </button>
             </div>
           </div>
@@ -1520,36 +1609,49 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                   onMouseLeave={() => setHoveredCaseId(null)}
                   style={{
                     border: '1px solid #cbd5e1', borderRadius: '10px',
-                    padding: '12px 16px', background: '#fff',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                    padding: '14px 18px', background: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                     cursor: 'pointer',
                   }}
                   onClick={() => handleEditVisit(v)}
                 >
-                  {/* Top row */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                  {/* Top row: Date, Case ID, Vitals badges, and Action buttons */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
-                        {fmtDate(v.date)} {v.time || '09:30 AM'}
+                      <span style={{ fontSize: '13px', fontWeight: 900, color: 'var(--text)' }}>
+                        {fmtDate(v.date)} {v.time || ''}
+                      </span>
+                      <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: '4px', padding: '2px 7px', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace' }}>
+                        #{v.caseId}
                       </span>
                       {v.bp && (
                         <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
                           BP: {v.bp}
                         </span>
                       )}
-                      {v.reference && (
-                        <span style={{ background: '#fce7f3', color: '#9d174d', border: '1px solid #fbcfe8', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                          Ref: {v.reference}
-                        </span>
-                      )}
-                      {v.complaint && (
-                        <span style={{ background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
-                          Complaint: {v.complaint}
-                        </span>
-                      )}
                       {v.sugar && (
                         <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
                           Sugar: {v.sugar}
+                        </span>
+                      )}
+                      {v.weight && (
+                        <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          Wt: {v.weight} kg
+                        </span>
+                      )}
+                      {v.pulse && (
+                        <span style={{ background: '#fce7f3', color: '#be185d', border: '1px solid #fbcfe8', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          Pulse: {v.pulse} bpm
+                        </span>
+                      )}
+                      {(v.other || v.otherVitals) && (
+                        <span style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 600 }}>
+                          Other: {v.other || v.otherVitals}
+                        </span>
+                      )}
+                      {v.reference && v.reference !== 'Self' && (
+                        <span style={{ background: '#ede9fe', color: '#5b21b6', border: '1px solid #ddd6fe', borderRadius: '5px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+                          Ref: {v.reference}
                         </span>
                       )}
                     </div>
@@ -1558,10 +1660,10 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); setPrintingVisit(v); }}
+                        onClick={(e) => { e.stopPropagation(); setPrintingVisit(v); setAutoPrint(true); }}
                         style={{
                           background: '#fff', color: '#047857', border: '1px solid #86efac',
-                          borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+                          borderRadius: '6px', padding: '4px 10px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
                           display: 'flex', alignItems: 'center', gap: '4px'
                         }}
                       >
@@ -1571,8 +1673,8 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleEditVisit(v); }}
                         style={{
-                          background: '#fff', color: '#047857', border: '1px solid #86efac',
-                          borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+                          background: '#fff', color: '#0284c7', border: '1px solid #93c5fd',
+                          borderRadius: '6px', padding: '4px 10px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
                           display: 'flex', alignItems: 'center', gap: '4px'
                         }}
                       >
@@ -1583,7 +1685,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         onClick={(e) => { e.stopPropagation(); handleDeleteVisit(v.caseId); }}
                         style={{
                           background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5',
-                          borderRadius: '6px', padding: '3px 7px', fontSize: '11.5px', cursor: 'pointer',
+                          borderRadius: '6px', padding: '4px 8px', fontSize: '11.5px', cursor: 'pointer',
                         }}
                         title="Delete visit"
                       >
@@ -1592,32 +1694,50 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                     </div>
                   </div>
 
+                  {/* Clinical Assessment Line (Diagnosis, Complaint, Investigation, Diet) */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
+                    {v.diagnosis && (
+                      <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '5px', padding: '3px 9px', fontSize: '11.5px', fontWeight: 800 }}>
+                        <i className="fa-solid fa-stethoscope" style={{ marginRight: '4px' }} />
+                        Dx: {v.diagnosis}
+                      </span>
+                    )}
+                    {v.complaint && (
+                      <span style={{ background: '#f3e8ff', color: '#6b21a8', border: '1px solid #e9d5ff', borderRadius: '5px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 600 }}>
+                        Complaint: {v.complaint}
+                      </span>
+                    )}
+                    {v.investigation && (
+                      <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '5px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 600 }}>
+                        Investigation: {v.investigation}
+                      </span>
+                    )}
+                    {v.dietary && (
+                      <span style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '5px', padding: '3px 8px', fontSize: '11px', fontWeight: 600 }}>
+                        Diet: {v.dietary.length > 60 ? v.dietary.slice(0, 60) + '...' : v.dietary}
+                      </span>
+                    )}
+                  </div>
+
                   {/* Bottom row: Two colored boxes side-by-side */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
                     {/* Left box: TREATMENT / CLINIC */}
                     <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '6px', padding: '8px 12px' }}>
                       <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#e11d48', textTransform: 'uppercase', marginBottom: '6px' }}>
                         TREATMENT / CLINIC:
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {(v.treatment && v.treatment.length > 0 && v.treatment[0].name) ? (
-                          v.treatment.map((t, ti) => (
+                        {(v.treatment && v.treatment.length > 0 && v.treatment.some(t => t.name)) ? (
+                          v.treatment.filter(t => t.name).map((t, ti) => (
                             <span key={ti} style={{
                               background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px',
                               padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b'
                             }}>
-                              {t.name}
+                              {t.name} {t.qty ? `(${t.qty})` : ''}
                             </span>
                           ))
                         ) : (
-                          <>
-                            <span style={{ background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                              Clinical Consultation
-                            </span>
-                            <span style={{ background: '#fff', border: '1px solid #fecdd3', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                              Injection Paracetamol IM
-                            </span>
-                          </>
+                          <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>None</span>
                         )}
                       </div>
                     </div>
@@ -1628,8 +1748,8 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         PRESCRIPTION / MEDICAL STORE:
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {(v.prescription && v.prescription.length > 0 && v.prescription[0].name) ? (
-                          v.prescription.map((rx, ri) => (
+                        {(v.prescription && v.prescription.length > 0 && v.prescription.some(rx => rx.name)) ? (
+                          v.prescription.filter(rx => rx.name).map((rx, ri) => (
                             <span key={ri} style={{
                               background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px',
                               padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b'
@@ -1638,17 +1758,19 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                             </span>
                           ))
                         ) : (
-                          <>
-                            <span style={{ background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                              Paracetamol 650mg (1-1-1-0) AF
-                            </span>
-                            <span style={{ background: '#fff', border: '1px solid #a5f3fc', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#1e293b' }}>
-                              Pantoprazole 40mg (1-0-0-0) BF
-                            </span>
-                          </>
+                          <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>None</span>
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Financials footer strip */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '11.5px', fontWeight: 700, color: '#475569', borderTop: '1px dashed #e2e8f0', paddingTop: '6px' }}>
+                    <span>Charge: ₹{v.charge || 0}</span>
+                    <span>Paid: ₹{v.received || 0}</span>
+                    <span style={{ color: (v.due || 0) > 0 ? '#dc2626' : '#16a34a' }}>
+                      Due: ₹{v.due || 0}
+                    </span>
                   </div>
                 </div>
               );
@@ -1738,9 +1860,27 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
         <PrescriptionModal
           patient={activePatient}
           visit={printingVisit}
-          onClose={() => setPrintingVisit(null)}
+          autoPrint={autoPrint}
+          onClose={() => { setPrintingVisit(null); setAutoPrint(false); }}
         />
       )}
+
+      {/* ── MASTER DATA AUTOCOMPLETE LISTS ── */}
+      <datalist id="complaints-list">
+        {complaintsMaster.map(c => (
+          <option key={c.id || c.name} value={c.name}>{c.code ? `[${c.code}] ` : ''}{c.name}</option>
+        ))}
+      </datalist>
+      <datalist id="investigations-list">
+        {investigationsMaster.map(inv => (
+          <option key={inv.id || inv.name} value={inv.name}>{inv.sampleType ? `[${inv.sampleType}] ` : ''}{inv.name}</option>
+        ))}
+      </datalist>
+      <datalist id="medicines-options">
+        {medicinesMaster.map(m => (
+          <option key={m.id || m.name} value={m.name}>{m.category ? `[${m.category}] ` : ''}{m.name}</option>
+        ))}
+      </datalist>
     </div>
   );
 }
