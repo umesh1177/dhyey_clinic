@@ -317,6 +317,13 @@ export function translateDietaryText(rawInput, lang = 'EN') {
 export default function PrescriptionModal({ patient = {}, visit = {}, onClose, autoPrint = false }) {
   const [lang, setLang] = useState('EN');
   const [dietaryInput, setDietaryInput] = useState(visit.dietary || 'db');
+  const viewportRef = useRef(null);
+
+  useEffect(() => {
+    if (viewportRef.current) {
+      viewportRef.current.scrollTop = 0;
+    }
+  }, [lang]);
 
   useEffect(() => {
     if (autoPrint) {
@@ -699,6 +706,7 @@ export default function PrescriptionModal({ patient = {}, visit = {}, onClose, a
 
         {/* Scrollable A5 Paper Sheet Viewport (Gray background matching Screenshot 1 & 2) */}
         <div
+          ref={viewportRef}
           className="cms-prescription-scroll-viewport"
           style={{
             flex: 1,
