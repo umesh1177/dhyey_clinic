@@ -306,7 +306,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
       complaint: isCurrentEditing ? complaint.trim() : (v.complaint || '').trim(),
       diagnosis: isCurrentEditing ? diagnosis.trim() : (v.diagnosis || '').trim(),
       dietary: isCurrentEditing ? dietary.trim() : (v.dietary || '').trim(),
-      labReport: isCurrentEditing ? labReportData : (v.labReport || null),
+      labReport: isCurrentEditing ? (labReportData !== null ? labReportData : (v.labReport || null)) : (v.labReport || null),
       treatment: isCurrentEditing ? treatment.filter(t => t.name.trim() !== '') : (v.treatment || []),
       prescription: isCurrentEditing ? prescription.filter(p => p.name.trim() !== '') : (v.prescription || []),
       charge: Number(isCurrentEditing ? charge : (v.charge || 0)),
@@ -942,8 +942,13 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                   display: 'flex', alignItems: 'center', gap: '6px',
                 }}
               >
-                <i className="fa-regular fa-file-lines" /> Attach Report
+                <i className="fa-regular fa-file-lines" /> {labReportData ? 'Edit Attached Report' : 'Attach Report'}
               </button>
+              {labReportData && (
+                <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <i className="fa-solid fa-circle-check" /> Report Attached
+                </span>
+              )}
               <button
                 type="button"
                 onClick={resetVisitForm}
@@ -956,10 +961,10 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           </div>
 
           {/* ── VITALS & CLINICAL ASSESSMENT ── */}
-          {/* Row 1: Vitals */}
+          {/* Row 1: Vitals (BP, Sugar, Weight, Reference) */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '90px 90px 90px 90px 140px 1fr',
+            gridTemplateColumns: '110px 110px 110px 1fr',
             gap: '8px', marginBottom: '10px',
           }}>
             <div>
@@ -978,41 +983,18 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                 value={weight} onChange={e => setWeight(e.target.value)} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>PULSE</label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="bpm"
-                value={pulse} onChange={e => setPulse(e.target.value)} />
-            </div>
-            <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>REFERENCE</label>
               <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="Self / Dr. Name"
                 value={reference} onChange={e => setReference(e.target.value)} />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>OTHER VITALS</label>
-              <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }} placeholder="Temp, SpO2, etc."
-                value={other} onChange={e => setOther(e.target.value)} />
-            </div>
           </div>
 
-          {/* Row 2: Clinical Assessment (Diagnosis, Investigation, Complaint) */}
+          {/* Row 2: Clinical Assessment (Investigation, Complaint) */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1.2fr 1.4fr 1.6fr',
-            gap: '8px', marginBottom: '14px',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '12px', marginBottom: '14px',
           }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
-                DIAGNOSIS (DX)
-              </label>
-              <input
-                type="text"
-                className="cms-input"
-                style={{ height: '30px', fontSize: '12px' }}
-                placeholder="e.g. Acute Viral Pyrexia, URTI..."
-                value={diagnosis}
-                onChange={e => setDiagnosis(e.target.value)}
-              />
-            </div>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>
                 INVESTIGATION (REPORTS) <span style={{ fontWeight: 400, fontSize: '9px' }}>(ENTER FOR COMMA)</span>
@@ -1376,15 +1358,24 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button
                           type="button"
-                          onClick={() => setShowLabModal(true)}
+                          onClick={() => {
+                            if (editingCaseId !== v.caseId) handleEditVisit(v);
+                            setLabReportData(v.labReport || null);
+                            setShowLabModal(true);
+                          }}
                           style={{
                             background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
                             padding: '4px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '6px',
                           }}
                         >
-                          <i className="fa-regular fa-file-lines" /> Attach Report
+                          <i className="fa-regular fa-file-lines" /> {(editingCaseId === v.caseId ? labReportData : v.labReport) ? 'Edit Attached Report' : 'Attach Report'}
                         </button>
+                        {(editingCaseId === v.caseId ? labReportData : v.labReport) && (
+                          <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '2px 8px', fontSize: '11px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <i className="fa-solid fa-circle-check" /> Report Attached
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() => { setHoveredCaseId(null); setExpandedCaseId(null); setEditingCaseId(null); }}
@@ -1956,10 +1947,21 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           caseNo={editingCaseId || (activePatient ? makeCaseId(activePatient.id || activePatient.patId, (activePatient.visits || []).length + 1) : '10101')}
           initialReport={labReportData}
           onClose={() => setShowLabModal(false)}
-          onSave={(data) => {
+          onSave={async (data) => {
             setLabReportData(data);
-            showToast('Diagnostic Laboratory Report saved & attached to case!');
             setLabReportFile({ name: `${data.labName || 'Lab_Report'}.pdf` });
+            showToast('Diagnostic Laboratory Report saved & attached to case!');
+            if (editingCaseId) {
+              try {
+                await apiFetch(`/consultations/${editingCaseId}`, {
+                  method: 'PUT',
+                  body: { labReport: data, labReportFile: `${data.labName || 'Lab_Report'}.pdf` },
+                });
+                await loadPatientData();
+              } catch (err) {
+                console.error('Failed to sync attached report to DB:', err);
+              }
+            }
           }}
         />
       )}

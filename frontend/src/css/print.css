@@ -14,7 +14,9 @@
   }
   
   #cms-print-area {
-    position: fixed !important;
+    visibility: visible !important;
+    display: block !important;
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 148mm !important;
@@ -32,6 +34,7 @@
   }
 
   #cms-report-print-area {
+    visibility: visible !important;
     position: static !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -45,7 +48,8 @@
   }
 
   #cms-cert-print-area {
-    position: fixed !important;
+    visibility: visible !important;
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
@@ -63,10 +67,12 @@
     print-color-adjust: exact !important;
   }
   
-  .no-print, .cms-sidebar, .cms-topbar, .cms-statusbar, .cms-toast, .cms-modal-backdrop {
+  .no-print, .cms-sidebar, .cms-topbar, .cms-statusbar, .cms-toast {
     display: none !important;
   }
 
+  .cms-modal-backdrop,
+  .cms-prescription-modal-backdrop,
   .cms-overlay {
     background: transparent !important;
     position: static !important;
@@ -76,9 +82,14 @@
     border: none !important;
     box-shadow: none !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    inset: auto !important;
+    overflow: visible !important;
   }
 
-  .cms-overlay .cms-modal {
+  .cms-modal-content,
+  .cms-prescription-preview-modal {
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
@@ -184,4 +195,3 @@
   font-size: 9.5pt;
   line-height: 1.45;
 }
-

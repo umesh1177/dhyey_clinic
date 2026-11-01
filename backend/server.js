@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
 const errorMiddleware = require('./middleware/errorMiddleware');

@@ -473,7 +473,7 @@ export default function PrescriptionModal({ patient = {}, visit = {}, onClose, a
 
   return (
     <div
-      className="cms-modal-backdrop"
+      className="cms-modal-backdrop cms-prescription-modal-backdrop"
       style={{
         zIndex: 99999,
         display: 'flex',
