@@ -119,10 +119,43 @@ export default function LabReportModal({
   const [typhiAH, setTyphiAH] = useState(initialReport?.typhiAH || '');
   const [typhiBH, setTyphiBH] = useState(initialReport?.typhiBH || '');
   const [widalResult, setWidalResult] = useState(initialReport?.widalResult || '');
-  const [xrayNotes, setXrayNotes] = useState(initialReport?.xrayNotes || '');
-  const [stoolNotes, setStoolNotes] = useState(initialReport?.stoolNotes || '');
-  const [usgNotes, setUsgNotes] = useState(initialReport?.usgNotes || '');
-  const [mriNotes, setMriNotes] = useState(initialReport?.mriNotes || '');
+
+  // Dynamic Special Report Boxes (Default 4 standard boxes + user added boxes)
+  const [specialReports, setSpecialReports] = useState(() => {
+    if (initialReport?.specialReports && Array.isArray(initialReport.specialReports) && initialReport.specialReports.length > 0) {
+      return initialReport.specialReports;
+    }
+    return [
+      { id: 'xray', title: 'X - RAY', value: initialReport?.xrayNotes || '', placeholder: 'Write X-Ray findings / impression here...' },
+      { id: 'stool', title: 'STOOL', value: initialReport?.stoolNotes || '', placeholder: 'Write Stool Examination notes...' },
+      { id: 'usg', title: 'SONOGRAPHY (USG)', value: initialReport?.usgNotes || '', placeholder: 'Write USG Abdomen / Pelvis report notes...' },
+      { id: 'mri', title: 'MRI / CTSCAN', value: initialReport?.mriNotes || '', placeholder: 'Write MRI / CT Scan report findings...' },
+    ];
+  });
+  const [showAddBox, setShowAddBox] = useState(false);
+  const [newBoxTitle, setNewBoxTitle] = useState('');
+
+  const handleAddBox = () => {
+    const title = newBoxTitle.trim();
+    if (!title) return;
+    const newBox = {
+      id: 'box_' + Date.now(),
+      title: title.toUpperCase(),
+      value: '',
+      placeholder: `Write ${title} report findings / notes...`,
+    };
+    setSpecialReports(prev => [...prev, newBox]);
+    setNewBoxTitle('');
+    setShowAddBox(false);
+  };
+
+  const handleRemoveBox = (idToRemove) => {
+    setSpecialReports(prev => prev.filter(b => b.id !== idToRemove));
+  };
+
+  const handleBoxValueChange = (id, val) => {
+    setSpecialReports(prev => prev.map(b => b.id === id ? { ...b, value: val } : b));
+  };
 
   const getInputStyle = (key, val, baseStyle = {}) => {
     const isOut = checkIsOutOfRange(key, val);
@@ -190,10 +223,13 @@ export default function LabReportModal({
       typhiAH,
       typhiBH,
       widalResult,
-      xrayNotes,
-      stoolNotes,
-      usgNotes,
-      mriNotes,
+      // Backward compatibility for standard fields:
+      xrayNotes: specialReports.find(b => b.id === 'xray')?.value || '',
+      stoolNotes: specialReports.find(b => b.id === 'stool')?.value || '',
+      usgNotes: specialReports.find(b => b.id === 'usg')?.value || '',
+      mriNotes: specialReports.find(b => b.id === 'mri')?.value || '',
+      // Complete dynamic list of custom & standard finding boxes:
+      specialReports: specialReports,
     };
     if (onSave) {
       onSave(fullReport);
@@ -249,10 +285,7 @@ export default function LabReportModal({
     setTyphiAH('');
     setTyphiBH('');
     setWidalResult('');
-    setXrayNotes('');
-    setStoolNotes('');
-    setUsgNotes('');
-    setMriNotes('');
+    setSpecialReports(prev => prev.map(b => ({ ...b, value: '' })));
   };
 
   return (
@@ -828,104 +861,229 @@ export default function LabReportModal({
                   </div>
                 </div>
 
-                {/* Free Text Findings: X-Ray, Stool, USG, MRI */}
+                {/* Free Text Findings: X-Ray, Stool, USG, MRI & Custom Added Boxes */}
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                  {/* Section Header with Add New Box Button */}
                   <div
                     style={{
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      color: '#0369a1',
-                      textTransform: 'uppercase',
-                      marginBottom: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      marginBottom: '10px',
                     }}
                   >
-                    DIAGNOSTIC RADIOLOGY, SONOGRAPHY &amp; SPECIAL REPORTS (DOCTOR FREE-TEXT FINDINGS)
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#0369a1',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.3px',
+                      }}
+                    >
+                      DIAGNOSTIC RADIOLOGY, SONOGRAPHY &amp; SPECIAL REPORTS (DOCTOR FREE-TEXT FINDINGS)
+                    </div>
+
+                    {/* Add New Box Controls */}
+                    <div>
+                      {showAddBox ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="text"
+                            className="cms-input"
+                            style={{
+                              height: '28px',
+                              fontSize: '11.5px',
+                              width: '180px',
+                              padding: '2px 8px',
+                              fontWeight: 700,
+                              borderColor: '#0284c7',
+                            }}
+                            placeholder="Box Title (e.g. ECG, ECHO)..."
+                            value={newBoxTitle}
+                            onChange={(e) => setNewBoxTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddBox();
+                              } else if (e.key === 'Escape') {
+                                setShowAddBox(false);
+                                setNewBoxTitle('');
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddBox}
+                            style={{
+                              background: '#0284c7',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '4px 10px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <i className="fa-solid fa-check" /> Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddBox(false);
+                              setNewBoxTitle('');
+                            }}
+                            style={{
+                              background: '#f1f5f9',
+                              color: '#64748b',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              padding: '4px 8px',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddBox(true)}
+                          style={{
+                            background: '#e0f2fe',
+                            color: '#0369a1',
+                            border: '1px solid #bae6fd',
+                            borderRadius: '6px',
+                            padding: '4px 12px',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                          }}
+                          title="Add a new custom report or finding box (e.g. ECG, ECHO, Biopsy)"
+                        >
+                          <i className="fa-solid fa-plus" /> + Add New Box
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                    <div>
-                      <label
+
+                  {/* Dynamic Grid of Report Boxes */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        specialReports.length <= 4
+                          ? `repeat(${Math.max(specialReports.length, 1)}, 1fr)`
+                          : 'repeat(auto-fill, minmax(210px, 1fr))',
+                      gap: '10px',
+                    }}
+                  >
+                    {specialReports.map((box) => (
+                      <div
+                        key={box.id}
                         style={{
-                          display: 'block',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#0369a1',
-                          textAlign: 'center',
-                          marginBottom: '4px',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '6px 8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          position: 'relative',
                         }}
                       >
-                        X - RAY
-                      </label>
-                      <textarea
-                        className="cms-input"
-                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
-                        placeholder="Write X-Ray findings / impression here..."
-                        value={xrayNotes}
-                        onChange={(e) => setXrayNotes(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '4px',
+                            borderBottom: '1px solid #edf2f7',
+                            paddingBottom: '3px',
+                          }}
+                        >
+                          <label
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              color: '#0369a1',
+                              margin: 0,
+                              letterSpacing: '0.3px',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {box.title}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBox(box.id)}
+                            style={{
+                              background: '#fee2e2',
+                              border: '1px solid #fecaca',
+                              color: '#b91c1c',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              borderRadius: '4px',
+                              width: '18px',
+                              height: '18px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              lineHeight: 1,
+                              padding: 0,
+                            }}
+                            title={`Cancel / Remove ${box.title} box`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <textarea
+                          className="cms-input"
+                          style={{
+                            width: '100%',
+                            height: '75px',
+                            fontSize: '11px',
+                            resize: 'vertical',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '4px',
+                            padding: '6px 8px',
+                          }}
+                          placeholder={box.placeholder || `Write ${box.title} findings / notes...`}
+                          value={box.value || ''}
+                          onChange={(e) => handleBoxValueChange(box.id, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                    {specialReports.length === 0 && (
+                      <div
                         style={{
-                          display: 'block',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#0369a1',
+                          gridColumn: '1 / -1',
+                          padding: '16px',
                           textAlign: 'center',
-                          marginBottom: '4px',
+                          color: '#94a3b8',
+                          fontSize: '12px',
+                          background: '#f8fafc',
+                          borderRadius: '8px',
+                          border: '1px dashed #cbd5e1',
                         }}
                       >
-                        STOOL
-                      </label>
-                      <textarea
-                        className="cms-input"
-                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
-                        placeholder="Write Stool Examination notes..."
-                        value={stoolNotes}
-                        onChange={(e) => setStoolNotes(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#0369a1',
-                          textAlign: 'center',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        SONOGRAPHY (USG)
-                      </label>
-                      <textarea
-                        className="cms-input"
-                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
-                        placeholder="Write USG Abdomen / Pelvis report notes..."
-                        value={usgNotes}
-                        onChange={(e) => setUsgNotes(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#0369a1',
-                          textAlign: 'center',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        MRI / CTSCAN
-                      </label>
-                      <textarea
-                        className="cms-input"
-                        style={{ width: '100%', height: '80px', fontSize: '11px', resize: 'vertical' }}
-                        placeholder="Write MRI / CT Scan report findings..."
-                        value={mriNotes}
-                        onChange={(e) => setMriNotes(e.target.value)}
-                      />
-                    </div>
+                        No report boxes currently added. Click <b>+ Add New Box</b> above to generate one.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
