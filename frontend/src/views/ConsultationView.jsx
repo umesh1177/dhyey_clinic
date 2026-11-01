@@ -66,10 +66,13 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
   const [visitTime, setVisitTime]   = useState(nowTime());
   const [bp, setBp]                 = useState('');
   const [sugar, setSugar]           = useState('');
+  const [weight, setWeight]         = useState('');
+  const [pulse, setPulse]           = useState('');
   const [other, setOther]           = useState('');
   const [reference, setReference]   = useState('');
   const [investigation, setInvestigation] = useState('');
   const [complaint, setComplaint]   = useState('');
+  const [labReportData, setLabReportData] = useState(null);
 
   /* dietary */
   const [dietary, setDietary]       = useState('');
@@ -242,7 +245,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
       familyId: famId,
       patientId: patId,
       date: visitDate, time: visitTime,
-      bp, sugar, otherVitals: other,
+      bp, sugar, weight, pulse, otherVitals: other,
       reference, investigation: investigation.trim(),
       complaint: complaint.trim(), diagnosis: diagnosis.trim(),
       dietary: dietary.trim(),
@@ -270,9 +273,65 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
       await loadPatientData();
       await loadAllFamilies();
       resetVisitForm();
-      if (andPrint) setPrintingVisit(visitData);
+      if (andPrint) {
+        setAutoPrint(true);
+        setPrintingVisit(visitData);
+      }
     } catch (err) {
       showToast(err.message || 'Failed to save visit to database', 'error');
+    }
+  };
+
+  /* ── Save changes to a specific historical visit ── */
+  const handleSaveHistoryVisit = async (v, andPrint = false) => {
+    if (!activePatient || !activeFamily) return;
+    const famId = activeFamily.id || activeFamily.famId;
+    const patId = activePatient.id || activePatient.patId;
+    const isCurrentEditing = (editingCaseId === v.caseId);
+
+    const visitData = {
+      caseId: v.caseId,
+      visitNum: v.visitNum || 1,
+      familyId: famId,
+      patientId: patId,
+      date: isCurrentEditing ? visitDate : (v.date || todayISO()),
+      time: isCurrentEditing ? visitTime : (v.time || nowTime()),
+      bp: isCurrentEditing ? bp : (v.bp || ''),
+      sugar: isCurrentEditing ? sugar : (v.sugar || ''),
+      weight: isCurrentEditing ? weight : (v.weight || ''),
+      pulse: isCurrentEditing ? pulse : (v.pulse || ''),
+      otherVitals: isCurrentEditing ? other : (v.otherVitals || ''),
+      reference: isCurrentEditing ? reference : (v.reference || ''),
+      investigation: isCurrentEditing ? investigation.trim() : (v.investigation || '').trim(),
+      complaint: isCurrentEditing ? complaint.trim() : (v.complaint || '').trim(),
+      diagnosis: isCurrentEditing ? diagnosis.trim() : (v.diagnosis || '').trim(),
+      dietary: isCurrentEditing ? dietary.trim() : (v.dietary || '').trim(),
+      labReport: isCurrentEditing ? labReportData : (v.labReport || null),
+      treatment: isCurrentEditing ? treatment.filter(t => t.name.trim() !== '') : (v.treatment || []),
+      prescription: isCurrentEditing ? prescription.filter(p => p.name.trim() !== '') : (v.prescription || []),
+      charge: Number(isCurrentEditing ? charge : (v.charge || 0)),
+      received: Number(isCurrentEditing ? received : (v.received || 0)),
+      due: Number(isCurrentEditing ? due : (v.due || 0)),
+      labReportFile: isCurrentEditing && labReportFile ? labReportFile.name : (v.labReportFile || null),
+    };
+
+    try {
+      await apiFetch('/consultations/' + v.caseId, {
+        method: 'PUT',
+        body: visitData,
+      });
+      showToast('Case #' + v.caseId + ' updated successfully.');
+      await loadPatientData();
+      await loadAllFamilies();
+      setExpandedCaseId(null);
+      setHoveredCaseId(null);
+      setEditingCaseId(null);
+      if (andPrint) {
+        setAutoPrint(true);
+        setPrintingVisit(visitData);
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to update case in database', 'error');
     }
   };
 
@@ -1379,14 +1438,32 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                           placeholder="e.g. CBC..."
                           value={editingCaseId === v.caseId ? investigation : (v.investigation || '')}
                           onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setInvestigation(e.target.value); }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const currentVal = editingCaseId === v.caseId ? investigation : (v.investigation || '');
+                              const expanded = expandShortcut(currentVal, investigationsMaster);
+                              if (editingCaseId !== v.caseId) handleEditVisit(v);
+                              setInvestigation(expanded);
+                            }
+                          }}
                           list="investigations-list" />
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase' }}>COMPLAINT</label>
                         <input type="text" className="cms-input" style={{ height: '30px', fontSize: '12px' }}
-                          placeholder="High fever, body chills and shivering for 2 da"
+                          placeholder="High fever, body chills..."
                           value={editingCaseId === v.caseId ? complaint : (v.complaint || '')}
                           onChange={e => { if (editingCaseId !== v.caseId) handleEditVisit(v); setComplaint(e.target.value); }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const currentVal = editingCaseId === v.caseId ? complaint : (v.complaint || '');
+                              const expanded = expandShortcut(currentVal, complaintsMaster);
+                              if (editingCaseId !== v.caseId) handleEditVisit(v);
+                              setComplaint(expanded);
+                            }
+                          }}
                           list="complaints-list" />
                       </div>
                     </div>
@@ -1607,10 +1684,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (editingCaseId !== v.caseId) handleEditVisit(v);
-                            handleSaveVisit(true);
-                          }}
+                          onClick={() => handleSaveHistoryVisit(v, true)}
                           style={{
                             background: '#0284c7', color: '#fff', border: 'none',
                             borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
@@ -1621,12 +1695,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (editingCaseId !== v.caseId) handleEditVisit(v);
-                            handleSaveVisit(false);
-                            setExpandedCaseId(null);
-                            setHoveredCaseId(null);
-                          }}
+                          onClick={() => handleSaveHistoryVisit(v, false)}
                           style={{
                             background: '#047857', color: '#fff', border: 'none',
                             borderRadius: '6px', padding: '6px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
@@ -1907,14 +1976,26 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
 
       {/* ── MASTER DATA AUTOCOMPLETE LISTS ── */}
       <datalist id="complaints-list">
-        {complaintsMaster.map(c => (
-          <option key={c.id || c.name} value={c.name}>{c.code ? `[${c.code}] ` : ''}{c.name}</option>
-        ))}
+        {complaintsMaster.map((c, i) => {
+          const prefix = complaint.includes(',') ? complaint.slice(0, complaint.lastIndexOf(',') + 1) + ' ' : '';
+          return (
+            <React.Fragment key={c.id || ('c-' + i)}>
+              <option value={prefix + c.name}>{(c.code ? '[' + c.code + '] ' : '') + c.name}</option>
+              {c.code && <option value={prefix + c.code}>{c.name}</option>}
+            </React.Fragment>
+          );
+        })}
       </datalist>
       <datalist id="investigations-list">
-        {investigationsMaster.map(inv => (
-          <option key={inv.id || inv.name} value={inv.name}>{inv.sampleType ? `[${inv.sampleType}] ` : ''}{inv.name}</option>
-        ))}
+        {investigationsMaster.map((inv, i) => {
+          const prefix = investigation.includes(',') ? investigation.slice(0, investigation.lastIndexOf(',') + 1) + ' ' : '';
+          return (
+            <React.Fragment key={inv.id || ('inv-' + i)}>
+              <option value={prefix + inv.name}>{(inv.sampleType ? '[' + inv.sampleType + '] ' : '') + inv.name}</option>
+              {inv.code && <option value={prefix + inv.code}>{inv.name}</option>}
+            </React.Fragment>
+          );
+        })}
       </datalist>
       <datalist id="medicines-options">
         {medicinesMaster.map(m => (

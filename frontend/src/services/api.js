@@ -8,7 +8,7 @@
 // const API_BASE_URL = (typeof window !== 'undefined' && (window.location.port === '5000' || window.location.port === '5173'))
 //   ? ''
 //   : 'http://localhost:5000';
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || '';
 
 /* ---- Storage & Helpers ---- */
 export const pad = (n, len = 4) => String(n || 0).padStart(len, '0');
@@ -53,21 +53,123 @@ export const makeCaseId = (arg1, arg2, arg3) => {
 /**
  * Expand shortcut code (e.g. PEN -> Penicillin) and append comma for multi-item fields
  */
+export const CLINICAL_SHORTCUTS = {
+  // Complaints & Symptoms
+  fev: 'Fever / High Temperature',
+  fever: 'Fever / High Temperature',
+  temp: 'Fever / High Temperature',
+  pyrexia: 'Fever / High Temperature',
+  cold: 'Cough / Cold / Sore Throat',
+  cough: 'Cough / Cold / Sore Throat',
+  throat: 'Cough / Cold / Sore Throat',
+  sore: 'Cough / Cold / Sore Throat',
+  head: 'Headache / Migraine',
+  headache: 'Headache / Migraine',
+  migraine: 'Headache / Migraine',
+  chest: 'Chest Pain / Discomfort',
+  cp: 'Chest Pain / Discomfort',
+  acid: 'Acidity / Heartburn / Gastric Pain',
+  acidity: 'Acidity / Heartburn / Gastric Pain',
+  gas: 'Acidity / Heartburn / Gastric Pain',
+  gerd: 'Acidity / Heartburn / Gastric Pain',
+  joint: 'Joint Pain / Knee Swelling',
+  knee: 'Joint Pain / Knee Swelling',
+  back: 'Joint Pain / Knee Swelling',
+  weak: 'General Weakness / Fatigue',
+  weakness: 'General Weakness / Fatigue',
+  fatigue: 'General Weakness / Fatigue',
+  bp: 'Hypertension Check / Giddiness',
+  giddiness: 'Hypertension Check / Giddiness',
+  vomit: 'Nausea / Vomiting',
+  nausea: 'Nausea / Vomiting',
+  breath: 'Breathlessness / Dyspnea',
+  dyspnea: 'Breathlessness / Dyspnea',
+  rash: 'Skin Rash / Itching',
+  itch: 'Skin Rash / Itching',
+  itching: 'Skin Rash / Itching',
+  motion: 'Loose Motions / Diarrhea',
+  motions: 'Loose Motions / Diarrhea',
+  diarrhea: 'Loose Motions / Diarrhea',
+
+  // Investigations & Lab Reports
+  cbc: 'Complete Blood Count (CBC)',
+  blood: 'Complete Blood Count (CBC)',
+  hemogram: 'Complete Blood Count (CBC)',
+  fbs: 'Blood Sugar Fasting & PP (FBS/PPBS)',
+  ppbs: 'Blood Sugar Fasting & PP (FBS/PPBS)',
+  rbs: 'Blood Sugar Fasting & PP (FBS/PPBS)',
+  sugar: 'Blood Sugar Fasting & PP (FBS/PPBS)',
+  hba1c: 'HbA1c (Glycated Hemoglobin)',
+  lipid: 'Lipid Profile Complete',
+  chol: 'Lipid Profile Complete',
+  cholesterol: 'Lipid Profile Complete',
+  lft: 'Liver Function Test (LFT)',
+  sgpt: 'Liver Function Test (LFT)',
+  sgot: 'Liver Function Test (LFT)',
+  kft: 'Renal / Kidney Function Test (KFT/RFT)',
+  rft: 'Renal / Kidney Function Test (KFT/RFT)',
+  creat: 'Renal / Kidney Function Test (KFT/RFT)',
+  creatinine: 'Renal / Kidney Function Test (KFT/RFT)',
+  kidney: 'Renal / Kidney Function Test (KFT/RFT)',
+  uric: 'Serum Uric Acid Report',
+  urine: 'Urine Routine & Microscopic (R/M)',
+  rm: 'Urine Routine & Microscopic (R/M)',
+  thyroid: 'Thyroid Profile (T3, T4, TSH)',
+  tsh: 'Thyroid Profile (T3, T4, TSH)',
+  t3: 'Thyroid Profile (T3, T4, TSH)',
+  t4: 'Thyroid Profile (T3, T4, TSH)',
+  xray: 'Chest X-Ray PA View',
+  'x-ray': 'Chest X-Ray PA View',
+  cxr: 'Chest X-Ray PA View',
+  ecg: '12-Lead ECG (Electrocardiogram)',
+  ekg: '12-Lead ECG (Electrocardiogram)',
+  usg: 'USG Abdomen & Pelvis (Sonography)',
+  sono: 'USG Abdomen & Pelvis (Sonography)',
+  sonography: 'USG Abdomen & Pelvis (Sonography)',
+  widal: 'Widal Test (Typhoid)',
+  dengue: 'Dengue NS1 Antigen Test',
+  malaria: 'Malaria Rapid Antigen Test',
+
+  // Allergies
+  pen: 'Penicillin',
+  penicillin: 'Penicillin',
+  sulfa: 'Sulfa Drugs',
+  asp: 'Aspirin / NSAIDs',
+  aspirin: 'Aspirin / NSAIDs',
+  dust: 'Dust / Pollen',
+  pollen: 'Dust / Pollen',
+  nut: 'Peanuts / Nuts',
+  peanut: 'Peanuts / Nuts',
+  nuts: 'Peanuts / Nuts',
+};
+
 export function expandShortcut(value, masterList) {
   if (!value) return '';
   const parts = value.split(',').map(p => p.trim());
   const lastPart = parts[parts.length - 1];
   if (!lastPart) return value.endsWith(', ') ? value : (value + ', ');
 
-  const lower = lastPart.toLowerCase();
-  const match = (masterList || []).find(m =>
-    (m.code && m.code.toLowerCase() === lower) ||
-    (m.id && m.id.toLowerCase() === lower) ||
-    (m.name && m.name.toLowerCase() === lower) ||
-    (m.code && m.code.toLowerCase().startsWith(lower)) ||
-    (m.name && m.name.toLowerCase().startsWith(lower)) ||
-    (m.name && m.name.toLowerCase().includes(lower))
-  );
+  const cleanLast = lastPart.toLowerCase().trim();
+
+  // 1. Direct dictionary match
+  if (CLINICAL_SHORTCUTS[cleanLast]) {
+    parts[parts.length - 1] = CLINICAL_SHORTCUTS[cleanLast];
+    return parts.filter(Boolean).join(', ') + ', ';
+  }
+
+  // 2. Master list match
+  const match = (masterList || []).find(m => {
+    const code = (m.code || '').toLowerCase().trim();
+    const id = (m.id || '').toLowerCase().trim();
+    const name = (m.name || m.title || '').toLowerCase().trim();
+    return code === cleanLast ||
+      id === cleanLast ||
+      name === cleanLast ||
+      (code && code.startsWith(cleanLast)) ||
+      (name && name.startsWith(cleanLast)) ||
+      (name && name.includes(cleanLast)) ||
+      (m.description && m.description.toLowerCase().includes(cleanLast));
+  });
 
   const expandedName = match ? (match.name || match.title || match.code || lastPart) : lastPart;
   parts[parts.length - 1] = expandedName;
