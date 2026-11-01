@@ -276,16 +276,45 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
     }
   };
 
+  const handleStartNewCase = () => {
+    setEditingCaseId(null);
+    setExpandedCaseId(null);
+    setHoveredCaseId(null);
+    setVisitDate(todayISO());
+    setVisitTime(nowTime());
+    setBp('');
+    setSugar('');
+    setWeight('');
+    setPulse('');
+    setOther('');
+    setReference('');
+    setInvestigation('');
+    setComplaint('');
+    setDiagnosis('');
+    setDietary('');
+    setTreatment([{ name: '', qty: '1', cost: 0 }]);
+    setPrescription([{ name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }]);
+    setCharge(0);
+    setReceived(0);
+    setDue(0);
+    setLabReportData(null);
+    setLabReportFile(null);
+    setIsFormOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('New Case Entry form ready!');
+  };
+
   const resetVisitForm = () => {
-    setIsFormOpen(false);
     setEditingCaseId(null);
     setVisitDate(todayISO()); setVisitTime(nowTime());
-    setBp(''); setSugar(''); setOther(''); setReference(''); setInvestigation(''); setComplaint('');
+    setBp(''); setSugar(''); setWeight(''); setPulse(''); setOther(''); setReference(''); setInvestigation(''); setComplaint('');
     setDietary(''); setDiagnosis('');
     setTreatment([{ name: '', qty: '1', cost: 0 }]);
     setPrescription([{ name: '', qty: '1', mor: '1', noon: '0', eve: '1', ngt: '0', timing: 'AF' }]);
     setCharge(0); setReceived(0); setDue(0);
+    setLabReportData(null);
     setLabReportFile(null);
+    setIsFormOpen(true);
   };
 
   const handleEditVisit = v => {
@@ -795,21 +824,32 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
           </button>
           <button
             type="button"
-            onClick={() => { if (isFormOpen) resetVisitForm(); else setIsFormOpen(true); }}
+            id="btn-new-case-entry"
+            onClick={handleStartNewCase}
             style={{
-              background: isFormOpen ? '#dc2626' : 'var(--primary)', color: '#fff', border: 'none',
+              background: '#095c54', color: '#fff', border: 'none',
               borderRadius: '8px', padding: '7px 16px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '6px',
+              boxShadow: '0 2px 6px rgba(9,92,84,0.3)'
             }}
+            title="Start fresh new case entry"
           >
-            {isFormOpen ? (
-              <><i className="fa-solid fa-xmark" /> Cancel</>
-            ) : (
-              <><i className="fa-solid fa-plus" /> New
-                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '11px', fontWeight: 800, marginLeft: '2px' }}>F6</span>
-              </>
-            )}
+            <i className="fa-solid fa-circle-plus" /> + New Case Entry
           </button>
+          {isFormOpen && (
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              style={{
+                background: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1',
+                borderRadius: '8px', padding: '7px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+              title="Hide Case Entry Form"
+            >
+              <i className="fa-solid fa-xmark" /> Close Form
+            </button>
+          )}
         </div>
       </div>
 

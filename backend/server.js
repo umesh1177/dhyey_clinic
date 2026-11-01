@@ -1141,7 +1141,16 @@ app.put(['/api/patients/:id', '/api/patient/:id'], authMiddleware, async (req, r
   try {
     const { id } = req.params;
     const clinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'demo';
-    const { name, relation, age, gender, bloodGroup, allergy, phone } = req.body;
+    const { name, relation, age, gender, bloodGroup, allergy, phone, society, area, oldName } = req.body;
+
+    const existingPatient = await Patient.findOne({ patId: id, clinicId });
+    if (!existingPatient) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    const prevName = existingPatient.name;
+    const prevRelation = existingPatient.relation || '';
+    const familyId = existingPatient.familyId;
 
     const updated = await Patient.findOneAndUpdate(
       { patId: id, clinicId },
@@ -1152,16 +1161,43 @@ app.put(['/api/patients/:id', '/api/patient/:id'], authMiddleware, async (req, r
         ...(gender !== undefined && { gender }),
         ...(bloodGroup !== undefined && { bloodGroup: bloodGroup.trim().toUpperCase() }),
         ...(allergy !== undefined && { allergy: allergy.trim().toUpperCase() }),
+        ...(society !== undefined && { society: society.trim() }),
+        ...(area !== undefined && { area: area.trim() }),
         ...(phone !== undefined && { phone: phone.trim() }),
       },
       { new: true }
     );
 
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Patient not found' });
+    // Maintain Data Consistency with Families collection:
+    // If this patient is Head/Self or matches family headName, keep Family collection in sync!
+    const isHead = (prevRelation && (prevRelation.toLowerCase() === 'head' || prevRelation.toLowerCase() === 'self')) ||
+                   (relation && (relation.toLowerCase() === 'head' || relation.toLowerCase() === 'self')) ||
+                   id === familyId ||
+                   id === familyId + '-01' ||
+                   id === familyId + '01';
+
+    if (familyId) {
+      const familyDoc = await Family.findOne({ famId: familyId, clinicId });
+      if (familyDoc) {
+        const isFamHeadMatch = isHead ||
+          (prevName && familyDoc.headName && familyDoc.headName.toUpperCase() === prevName.toUpperCase()) ||
+          (oldName && familyDoc.headName && familyDoc.headName.toUpperCase() === oldName.trim().toUpperCase());
+
+        if (isFamHeadMatch) {
+          const famUpdates = {};
+          if (name) famUpdates.headName = name.trim().toUpperCase();
+          if (phone !== undefined && phone !== '') famUpdates.phone = phone.trim();
+          if (society !== undefined && society !== '') famUpdates.society = society.trim();
+          if (area !== undefined && area !== '') famUpdates.area = area.trim();
+
+          if (Object.keys(famUpdates).length > 0) {
+            await Family.findOneAndUpdate({ famId: familyId, clinicId }, famUpdates);
+          }
+        }
+      }
     }
 
-    res.json({ success: true, message: 'Patient updated successfully', data: updated });
+    res.json({ success: true, message: 'Patient and family consistency updated successfully', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
