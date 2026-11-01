@@ -14,7 +14,7 @@ export default function Topbar({ onToggleSidebar, onSelectPatient, theme, onTogg
 
   const docName = session?.profile?.name || session?.profile?.username || 'Doctor';
   const fullDocName = docName.startsWith('Dr.') ? docName : `Dr. ${docName}`;
-  const clinicName = activeClinic?.name || session?.profile?.clinicName || 'Dhyey Clinic & Nursing Home';
+  const clinicName = activeClinic?.name || session?.profile?.clinicName || 'Umesh Pal Clinic';
   const clinics = session?.profile?.clinics || [{ id: 'CLN-001', name: clinicName }];
 
   const todayStr = '31/10/2026';

@@ -1944,6 +1944,7 @@ export default function ConsultationView({ initialSelection, onNavigate }) {
         <LabReportModal
           patient={activePatient}
           family={activeFamily}
+          doctorName={session?.profile?.name || 'Dr. Umesh Pal'}
           caseNo={editingCaseId || (activePatient ? makeCaseId(activePatient.id || activePatient.patId, (activePatient.visits || []).length + 1) : '10101')}
           initialReport={labReportData}
           onClose={() => setShowLabModal(false)}

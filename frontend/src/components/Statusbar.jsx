@@ -11,7 +11,7 @@ export default function Statusbar() {
     return () => clearInterval(timer);
   }, []);
 
-  const name = activeClinic?.name || 'Dhyey Clinic & Nursing Home';
+  const name = activeClinic?.name || 'Umesh Pal Clinic';
 
   return (
     <footer className="cms-statusbar">

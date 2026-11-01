@@ -29,18 +29,6 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    // Doctor mock tokens support (for development/offline demo)
-    if (token === 'mock-doctor-token' || token.startsWith('mock-doc') || token.startsWith('mock-token-doc')) {
-      req.user = { id: 'demo-doc', username: 'dhyey', role: 'doctor', name: 'Dr. Chirag Paghdal' };
-      if (req.headers['x-clinic-id']) req.user.activeClinicId = req.headers['x-clinic-id'];
-      return next();
-    }
-    if (token.startsWith('mock-')) {
-      req.user = { id: 'demo-user', username: 'dhyey', role: 'doctor', name: 'Dr. Chirag Paghdal' };
-      if (req.headers['x-clinic-id']) req.user.activeClinicId = req.headers['x-clinic-id'];
-      return next();
-    }
-
     // Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;

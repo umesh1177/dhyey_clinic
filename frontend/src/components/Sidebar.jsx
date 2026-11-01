@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ currentView, setCurrentView, isCollapsed, isMobileOpen, onCloseMobile }) {
   const { activeClinic } = useAuth();
-  const clinicName = activeClinic?.name || 'Dhyey Clinic';
+  const clinicName = activeClinic?.name || 'Umesh Pal Clinic';
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: 'fa-table-columns', kbd: 'F4' },

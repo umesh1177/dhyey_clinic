@@ -47,7 +47,7 @@ function checkIsOutOfRange(key, value) {
 export default function LabReportModal({
   patient,
   family,
-  doctorName = 'Dr. Chirag Paghdal',
+  doctorName = 'Dr. Umesh Pal',
   caseNo,
   onClose,
   onSave,

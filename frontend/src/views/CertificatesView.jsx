@@ -67,8 +67,8 @@ export default function CertificatesView() {
     ? filteredCerts
     : filteredCerts.slice((certPage - 1) * Number(certPerPage), certPage * Number(certPerPage));
 
-  const docName = session?.profile?.name || 'Dr. Chirag Paghdal';
-  const clinicName = activeClinic?.name || 'Dhyey Clinic & Nursing Home';
+  const docName = session?.profile?.name || 'Dr. Umesh Pal';
+  const clinicName = activeClinic?.name || 'Umesh Pal Clinic';
   const clinicAddress = 'Shop No. 1, Mahavir Heights, New Kosad Road, Amroli, Surat · Ph: 9876543210';
 
   const [customBody, setCustomBody] = useState(

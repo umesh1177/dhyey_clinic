@@ -143,6 +143,11 @@ export default function App() {
     }
   };
 
+  // Security: Block all access to protected views if user is not authenticated
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
+
   return (
     <div className="cms-layout">
       {/* Sidebar Navigation */}

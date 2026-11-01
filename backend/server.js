@@ -211,58 +211,41 @@ const seedDemoData = async () => {
 
     const clinicCount = await Clinic.countDocuments();
     if (clinicCount === 0) {
-      console.log('[Database Seeding]: Seeding default clinics to MongoDB...');
+      console.log('[Database Seeding]: Seeding default clinic (Umesh Pal Clinic) to MongoDB...');
       await Clinic.insertMany([
         {
           clinicId: 'CLN-001',
-          name: 'Dhyey Main Clinic',
+          name: 'Umesh Pal Clinic',
           city: 'Ahmedabad',
-          doctorsCount: 12,
+          doctorsCount: 1,
           status: 'Active',
           services: ['digitalPrescription', 'certificates', 'billing'],
-          specialties: 'General Medicine, Cardiology, Pediatrics',
-          facilities: 'Pharmacy, Pathology Lab, ECG, Emergency Care',
-          phone: '9876543210',
-          email: 'contact@dhyeyclinic.com',
+          specialties: 'General Medicine, Family Practice',
+          facilities: 'OPD, Pharmacy, Diagnostic Lab',
+          phone: '8780588919',
+          email: 'umeshpal@clinic.com',
           registration: 'GUJ-MED-2026-001',
-          address: '101, Medical Enclave, CG Road, Navrangpura, Ahmedabad, Gujarat - 380009',
-          days: 'Monday - Saturday',
-          hours: '08:30 AM - 08:30 PM',
-          verifiedDocuments: 13,
-        },
-        {
-          clinicId: 'CLN-002',
-          name: 'Satellite Wellness Centre',
-          city: 'Ahmedabad',
-          doctorsCount: 7,
-          status: 'Active',
-          services: ['digitalPrescription', 'billing'],
-          specialties: 'Dermatology, Cosmetology, Trichology',
-          facilities: 'Laser Suite, Minor Procedure Room',
-          phone: '9876543222',
-          email: 'help@satelliteclinic.com',
-          registration: 'GUJ-MED-2026-002',
-          address: '304, Titanium City Centre, Anandnagar Road, Satellite, Ahmedabad, Gujarat - 380015',
+          address: 'Near VGEC, Chandkheda, Ahmedabad, Gujarat - 382424',
           days: 'Monday - Saturday',
           hours: '09:00 AM - 08:00 PM',
-          verifiedDocuments: 8,
+          verifiedDocuments: 5,
         },
       ]);
     }
 
-    const doctorUser = await User.findOne({ username: 'dhyey' });
+    const doctorUser = await User.findOne({ username: 'umesh pal' });
     if (!doctorUser) {
-      console.log('[Database Seeding]: Seeding default doctor user (dhyey / 123)...');
+      console.log('[Database Seeding]: Seeding default doctor user (umesh pal)...');
+      const hashedPassword = await bcrypt.hash('Umesh@2005', 10);
       await new User({
-        username: 'dhyey',
-        password: '123',
+        username: 'umesh pal',
+        password: hashedPassword,
         role: 'doctor',
-        name: 'Dr. Chirag Paghdal',
-        degree: 'B.H.M.S.',
-        regNo: 'G-9035',
+        name: 'Dr. Umesh Pal',
+        degree: 'M.B.B.S.',
+        regNo: 'G-2026-UP',
         clinics: [
-          { id: 'CLN-001', name: 'Dhyey Main Clinic', address: '101, Medical Enclave, CG Road, Ahmedabad', phone: '9876543210' },
-          { id: 'CLN-002', name: 'Satellite Wellness Centre', address: '304, Titanium City Centre, Satellite, Ahmedabad', phone: '9876543222' },
+          { id: 'CLN-001', name: 'Umesh Pal Clinic', address: 'Near VGEC, Chandkheda, Ahmedabad, Gujarat - 382424', phone: '8780588919' },
         ],
         activeClinicId: 'CLN-001',
       }).save();
@@ -567,44 +550,32 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide both username and password' });
     }
 
-    if (username.trim().toLowerCase() === 'dhyey' && password === '123') {
-      const demoDoctor = {
-        id: 'demo',
-        username: 'dhyey',
+    const cleanUsername = username.trim();
+    const user = await User.findOne({ username: { $regex: new RegExp(`^${cleanUsername.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+
+    const isMatch = (user.password === password) || (await bcrypt.compare(password, user.password).catch(() => false));
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+
+    const token = generateToken(user);
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
         role: 'doctor',
-        name: 'Dr. Chirag Paghdal',
-        degree: 'B.H.M.S.',
-        regNo: 'G-9035',
-        clinics: [{ id: 'demo', name: 'Dhyey Clinic & Nursing Home' }],
-        activeClinicId: 'demo',
-      };
-      const token = generateToken(demoDoctor);
-      return res.json({ success: true, token, user: demoDoctor });
-    }
-
-    let user = await User.findOne({ username: username.trim() });
-    if (user) {
-      const isMatch = (user.password === password) || (await bcrypt.compare(password, user.password).catch(() => false));
-      if (!isMatch) {
-        return res.status(401).json({ success: false, message: 'Invalid username or password' });
-      }
-
-      const token = generateToken(user);
-      return res.json({
-        success: true,
-        token,
-        user: {
-          id: user._id,
-          username: user.username,
-          role: 'doctor',
-          name: user.name || `Dr. ${user.username}`,
-          degree: user.degree,
-          regNo: user.regNo,
-          clinics: user.clinics || [{ id: 'demo', name: 'Default Clinic' }],
-          activeClinicId: user.activeClinicId || 'demo',
-        },
-      });
-    }
+        name: user.name || `Dr. ${user.username}`,
+        degree: user.degree || 'M.B.B.S.',
+        regNo: user.regNo || 'G-2026-UP',
+        clinics: user.clinics && user.clinics.length > 0 ? user.clinics : [{ id: 'CLN-001', name: 'Umesh Pal Clinic' }],
+        activeClinicId: user.activeClinicId || 'CLN-001',
+      },
+    });
 
     return res.status(401).json({ success: false, message: 'Invalid username or password' });
   } catch (error) {
@@ -737,9 +708,9 @@ app.get('/api/clinic/info', authMiddleware, async (req, res) => {
 
     const clinicInfo = {
       id: clinicDoc?.clinicId || clinicId,
-      name: clinicDoc?.name || 'Dhyey Clinic & Nursing Home',
-      address: clinicDoc?.address || '101, Medical Enclave, CG Road, Navrangpura, Ahmedabad',
-      phone: clinicDoc?.phone || '9876543210',
+      name: clinicDoc?.name || 'Umesh Pal Clinic',
+      address: clinicDoc?.address || 'Near VGEC, Chandkheda, Ahmedabad, Gujarat - 382424',
+      phone: clinicDoc?.phone || '8780588919',
       city: clinicDoc?.city || 'Ahmedabad',
       services: clinicDoc?.services || ['digitalPrescription', 'certificates', 'billing'],
     };
@@ -1505,7 +1476,7 @@ app.get(['/api/prescriptions/print/:caseId', '/api/prescription/print/:caseId'],
     }
 
     const patient = await Patient.findOne({ patId: visit.patientId, clinicId });
-    const doctor = (await User.findById(visit.doctorId)) || { name: 'Dr. Chirag Paghdal', username: 'dhyey' };
+    const doctor = (await User.findById(visit.doctorId).catch(() => null)) || (await User.findOne({ role: 'doctor' }).catch(() => null)) || { name: 'Dr. Umesh Pal', username: 'umesh pal' };
 
     res.json({
       success: true,
@@ -1583,7 +1554,7 @@ app.post(['/api/certificates', '/api/certificate'], authMiddleware, async (req, 
       templateName: templateName || 'Medical Fitness / Leave',
       customBody: customBody || '',
       clinicId,
-      doctorName: req.user?.name || 'Dr. Chirag Paghdal',
+      doctorName: req.user?.name || 'Dr. Umesh Pal',
       issuedDate: todayISO(),
       place: place || 'Ahmedabad',
       status: 'Issued',
@@ -2327,9 +2298,9 @@ app.post(['/api/feedback', '/api/support'], authMiddleware, async (req, res, nex
     }
 
     const doctorId = req.user?.id || req.user?._id || 'demo-doc';
-    const activeDoctorName = doctorName || req.user?.name || 'Dr. Chirag Paghdal';
-    const activeClinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'demo';
-    const activeClinicName = clinicName || 'Dhyey Clinic & Hospital';
+    const activeDoctorName = doctorName || req.user?.name || 'Dr. Umesh Pal';
+    const activeClinicId = req.headers['x-clinic-id'] || req.user?.activeClinicId || 'CLN-001';
+    const activeClinicName = clinicName || 'Umesh Pal Clinic';
 
     const year = new Date().getFullYear();
     const count = await Feedback.countDocuments();
@@ -2427,7 +2398,7 @@ app.post(['/api/feedback/:id/reply', '/api/support/:id/reply'], authMiddleware, 
       return res.status(404).json({ success: false, message: 'Feedback ticket not found' });
     }
 
-    const name = req.user?.name || 'Dr. Chirag Paghdal';
+    const name = req.user?.name || 'Dr. Umesh Pal';
     ticket.replies.push({
       senderRole: 'doctor',
       senderName: name,

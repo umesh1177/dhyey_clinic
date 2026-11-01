@@ -315,9 +315,17 @@ export function translateDietaryText(rawInput, lang = 'EN') {
 }
 
 export default function PrescriptionModal({ patient = {}, visit = {}, onClose, autoPrint = false }) {
+  const { session, activeClinic } = useAuth();
   const [lang, setLang] = useState('EN');
   const [dietaryInput, setDietaryInput] = useState(visit.dietary || 'db');
   const viewportRef = useRef(null);
+
+  const currentDocName = session?.profile?.name || (session?.profile?.username ? `Dr. ${session.profile.username}` : 'Dr. Umesh Pal');
+  const currentDegree = session?.profile?.degree || 'M.B.B.S.';
+  const currentRegNo = session?.profile?.regNo || 'G-2026-UP';
+  const currentClinicName = activeClinic?.name || session?.profile?.clinicName || 'Umesh Pal Clinic';
+  const currentClinicAddress = activeClinic?.address || 'Near VGEC, Chandkheda, Ahmedabad, Gujarat - 382424';
+  const currentClinicPhone = activeClinic?.phone || '8780588919';
 
   useEffect(() => {
     if (viewportRef.current) {
@@ -336,11 +344,11 @@ export default function PrescriptionModal({ patient = {}, visit = {}, onClose, a
 
   const I18N = {
     EN: {
-      drTitle: 'Dr. Chirag Paghdal',
-      drDegree: 'FAMILY PHYSICIAN (B.H.M.S.)',
-      mobileLabel: 'Mo.: +91 98793 80508',
-      regLabel: 'Reg. No. G-9035',
-      clinicBanner: 'Dhyey Clinic & Nursing Home : Shop No. 1, Mahavir Heights, New Kosad Road, Amroli, Surat.',
+      drTitle: currentDocName,
+      drDegree: `FAMILY PHYSICIAN (${currentDegree})`,
+      mobileLabel: `Mo.: +91 ${currentClinicPhone}`,
+      regLabel: `Reg. No. ${currentRegNo}`,
+      clinicBanner: `${currentClinicName} : ${currentClinicAddress}`,
       for: 'FOR:',
       age: 'Age:',
       date: 'DATE:',
@@ -369,11 +377,11 @@ export default function PrescriptionModal({ patient = {}, visit = {}, onClose, a
       chemistNote: '+ Harsh Medical & General Stores +',
     },
     GU: {
-      drTitle: 'Dr. Chirag Paghdal',
-      drDegree: 'ફેમિલી ફિઝિશિયન (B.H.M.S.)',
-      mobileLabel: 'મો.: +91 98793 80508',
-      regLabel: 'રજી. નં. G-9035',
-      clinicBanner: 'ધ્યેય ક્લિનિક અને નર્સિંગ હોમ : શોપ નં. ૧, મહાવીર હાઈટ્સ, ન્યુ કોસાડ રોડ, અમરોલી, સુરત.',
+      drTitle: currentDocName,
+      drDegree: `ફેમિલી ફિઝિશિયન (${currentDegree})`,
+      mobileLabel: `મો.: +91 ${currentClinicPhone}`,
+      regLabel: `રજી. નં. ${currentRegNo}`,
+      clinicBanner: `${currentClinicName} : ${currentClinicAddress}`,
       for: 'દર્દીનું નામ:',
       age: 'ઉંમર:',
       date: 'તારીખ:',
@@ -402,11 +410,11 @@ export default function PrescriptionModal({ patient = {}, visit = {}, onClose, a
       chemistNote: '+ હર્ષ મેડિકલ એન્ડ જનરલ સ્ટોર્સ +',
     },
     HI: {
-      drTitle: 'Dr. Chirag Paghdal',
-      drDegree: 'फैमिली फिजिशियन (B.H.M.S.)',
-      mobileLabel: 'मो.: +91 98793 80508',
-      regLabel: 'पंजी. सं. G-9035',
-      clinicBanner: 'ध्येय क्लिनिक एवं नर्सिंग होम : शॉप नं. १, महावीर हाइट्स, न्यू कोसाड रोड, अमरोली, सूरत.',
+      drTitle: currentDocName,
+      drDegree: `फैमिली फिजिशियन (${currentDegree})`,
+      mobileLabel: `मो.: +91 ${currentClinicPhone}`,
+      regLabel: `पंजी. सं. ${currentRegNo}`,
+      clinicBanner: `${currentClinicName} : ${currentClinicAddress}`,
       for: 'मरीज का नाम:',
       age: 'उम्र:',
       date: 'दिनांक:',

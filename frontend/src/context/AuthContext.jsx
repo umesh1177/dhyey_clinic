@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
       const c = (session.profile.clinics || []).find((item) => item.id === clinicId) ||
                 session.profile.clinics?.[0] || {
                   id: 'CLN-001',
-                  name: session.profile.clinicName || 'Dhyey Clinic & Hospital',
+                  name: session.profile.clinicName || 'Umesh Pal Clinic',
                 };
       setActiveClinic(c);
     } else {
@@ -21,81 +21,36 @@ export function AuthProvider({ children }) {
     }
   }, [session]);
 
+  // Handle unauthorized events across the application
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setSession(null);
+      setAuthSession(null);
+      showToast('Session expired. Please log in again.', 'warning');
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
   const login = async (username, password) => {
-    try {
-      const res = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: { username, password },
-      });
+    const res = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: { username: username.trim(), password },
+    });
 
-      if (res && res.success) {
-        const sessionData = {
-          token: res.token,
-          role: 'doctor',
-          profile: res.user,
-        };
-        setAuthSession(sessionData);
-        setSession(sessionData);
-        showToast(`Welcome back, ${res.user.name || res.user.username}!`);
-        return sessionData;
-      } else {
-        throw new Error(res.message || 'Login failed');
-      }
-    } catch (err) {
-      return fallbackLocalLogin(username, password);
-    }
-  };
-
-  const fallbackLocalLogin = (username, password) => {
-    const u = username.trim().toLowerCase();
-    const p = password.trim();
-
-    if (u === 'dhyey' && p === '123') {
-      const doctorSession = {
+    if (res && res.success) {
+      const sessionData = {
+        token: res.token,
         role: 'doctor',
-        profile: {
-          id: 'demo',
-          username: 'dhyey',
-          name: 'Dr. Chirag Paghdal',
-          degree: 'B.H.M.S.',
-          regNo: 'G-9035',
-          clinics: [
-            { id: 'CLN-001', name: 'Dhyey Main Clinic', address: '101, Medical Enclave, CG Road, Ahmedabad' },
-            { id: 'CLN-002', name: 'Satellite Wellness Centre', address: '304, Titanium City Centre, Satellite, Ahmedabad' },
-          ],
-          activeClinicId: 'CLN-001',
-          role: 'doctor',
-        },
-        token: 'mock-doctor-token',
+        profile: res.user,
       };
-      setAuthSession(doctorSession);
-      setSession(doctorSession);
-      showToast('Signed in as Dr. Chirag Paghdal');
-      return doctorSession;
+      setAuthSession(sessionData);
+      setSession(sessionData);
+      showToast(`Welcome back, ${res.user.name || res.user.username}!`);
+      return sessionData;
+    } else {
+      throw new Error(res?.message || 'Invalid username or password');
     }
-
-    if (u === 'mehul' && (p === '123' || p === 'password123')) {
-      const doctorSession = {
-        role: 'doctor',
-        profile: {
-          id: 'doc_mehul',
-          username: 'mehul',
-          name: 'Dr. Mehul Shah',
-          degree: 'M.D. (Medicine)',
-          regNo: 'G-8821',
-          clinics: [{ id: 'CLN-001', name: 'Dhyey Main Clinic' }],
-          activeClinicId: 'CLN-001',
-          role: 'doctor',
-        },
-        token: 'mock-doctor-mehul-token',
-      };
-      setAuthSession(doctorSession);
-      setSession(doctorSession);
-      showToast('Signed in as Dr. Mehul Shah');
-      return doctorSession;
-    }
-
-    throw new Error('Invalid username or password');
   };
 
   const logout = () => {

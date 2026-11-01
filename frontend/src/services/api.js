@@ -264,6 +264,12 @@ export async function apiFetch(endpoint, options = {}) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      if (res.status === 401 && !endpoint.includes('/auth/login')) {
+        setAuthSession(null);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth:unauthorized'));
+        }
+      }
       throw new Error(data.message || `Request failed with status ${res.status}`);
     }
     return data;

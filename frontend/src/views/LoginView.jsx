@@ -4,8 +4,8 @@ import { showToast } from '../services/api';
 
 export default function LoginView() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('dhyey');
-  const [password, setPassword] = useState('123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [keepSigned, setKeepSigned] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -25,20 +25,6 @@ export default function LoginView() {
     } catch (err) {
       setErrorMsg(err.message || 'Invalid username or password.');
       showToast(err.message || 'Login failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (u, p) => {
-    setUsername(u);
-    setPassword(p);
-    setErrorMsg('');
-    setLoading(true);
-    try {
-      await login(u, p);
-    } catch (err) {
-      setErrorMsg(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -122,7 +108,7 @@ export default function LoginView() {
               </div>
               <div>
                 <h1 style={{ fontSize: '21px', fontWeight: 900, color: '#ffffff', margin: 0, lineHeight: 1.2 }}>
-                  Dhyey Clinic &amp; Hospital
+                  Umesh Pal Clinic
                 </h1>
                 <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#6ee7b7', letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '2px' }}>
                   DOCTOR WORKSPACE
@@ -294,7 +280,7 @@ export default function LoginView() {
                   type="text"
                   className="cms-input"
                   style={{ width: '100%', paddingLeft: '34px', height: '40px', fontSize: '13.5px', background: '#f8fafc', border: '1px solid #cbd5e1' }}
-                  placeholder="dhyey"
+                  placeholder="Enter username (e.g. umesh pal)"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoFocus
@@ -310,7 +296,7 @@ export default function LoginView() {
                 </label>
                 <a
                   href="#forgot"
-                  onClick={(e) => { e.preventDefault(); alert('Default credentials: username "dhyey", password "123"'); }}
+                  onClick={(e) => { e.preventDefault(); alert('Please contact the clinic administrator to reset your password.'); }}
                   style={{ fontSize: '11.5px', color: '#64748b', textDecoration: 'none', fontWeight: 600 }}
                 >
                   Forgot Password?
@@ -325,7 +311,7 @@ export default function LoginView() {
                   type={showPass ? 'text' : 'password'}
                   className="cms-input"
                   style={{ width: '100%', paddingLeft: '34px', paddingRight: '38px', height: '40px', fontSize: '13.5px', background: '#f8fafc', border: '1px solid #cbd5e1' }}
-                  placeholder="•••"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -390,55 +376,6 @@ export default function LoginView() {
               )}
             </button>
           </form>
-
-          {/* Quick Doctor Logins */}
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.5px', textAlign: 'center', marginBottom: '8px', textTransform: 'uppercase' }}>
-              Quick Doctor Logins
-            </div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('dhyey', '123')}
-                style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '20px',
-                  padding: '5px 12px',
-                  fontSize: '11.5px',
-                  color: '#334155',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <i className="fa-solid fa-user-doctor" style={{ color: '#059669', fontSize: '11px' }} />
-                <span>Dr. Chirag (dhyey / 123)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('mehul', '123')}
-                style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '20px',
-                  padding: '5px 12px',
-                  fontSize: '11.5px',
-                  color: '#334155',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <i className="fa-solid fa-user-doctor" style={{ color: '#059669', fontSize: '11px' }} />
-                <span>Dr. Mehul (mehul / 123)</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
