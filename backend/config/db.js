@@ -7,7 +7,7 @@ const connectDB = async () => {
     return;
   }
 
-  const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/dhyey_clinic_db';
+  const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/jaydipclinic';
 
   try {
     const conn = await mongoose.connect(uri, {

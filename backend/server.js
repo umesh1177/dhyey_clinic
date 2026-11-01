@@ -120,6 +120,18 @@ const DEFAULT_MASTERS = {
     { id: 's4', name: 'Parijat Residency', area: 'Bopal' },
     { id: 's5', name: 'Royal Residency', area: 'Thaltej' },
   ],
+  navigation: [
+    { id: 'sc1', key: 'F1', target: 'family', title: 'Family Head Registration', category: 'Navigation' },
+    { id: 'sc2', key: 'F2', target: 'patient', title: 'Add Family Member', category: 'Navigation' },
+    { id: 'sc3', key: 'F3', target: 'case', title: 'Patient Record & Case', category: 'Navigation' },
+    { id: 'sc4', key: 'F4', target: 'dashboard', title: 'Clinical Dashboard', category: 'Navigation' },
+    { id: 'sc5', key: 'F5', target: 'reports', title: 'Clinical Reports', category: 'Navigation' },
+    { id: 'sc6', key: 'F6', target: 'certificates', title: 'Medical Certificate', category: 'Navigation' },
+    { id: 'sc7', key: 'F7', target: 'masters', title: 'Master Data Setup', category: 'Navigation' },
+    { id: 'sc8', key: 'F8', target: 'feedback', title: 'Send Complaint / Feedback', category: 'Support' },
+    { id: 'sc9', key: '/', target: 'quick_search', title: 'Quick Global Search', category: 'Action' },
+    { id: 'sc10', key: 'Esc', target: 'close_modal', title: 'Close Modal / Unfocus', category: 'Action' },
+  ],
   customShortcuts: [
     { id: 'sc1', key: 'F1', target: 'family', title: 'Family Head Registration', category: 'Navigation' },
     { id: 'sc2', key: 'F2', target: 'patient', title: 'Add Family Member', category: 'Navigation' },
@@ -484,6 +496,27 @@ const seedDemoData = async () => {
       ]);
 
       console.log('[Database Seeding]: Rich demo dataset seeded successfully to MongoDB.');
+    // Seed MasterData in seedDemoData
+    const masterTypes = ['dietary', 'complaints', 'investigations', 'areas', 'medicines', 'allergies', 'relations', 'societies', 'navigation'];
+    for (const t of masterTypes) {
+      const existing = await MasterData.findOne({ type: t });
+      if (!existing || !existing.items || existing.items.length === 0) {
+        const items = DEFAULT_MASTERS[t] || (t === 'navigation' ? DEFAULT_MASTERS.customShortcuts : []);
+        if (items && items.length > 0) {
+          await MasterData.findOneAndUpdate(
+            { type: t },
+            { clinicId: 'shared', type: t, items },
+            { upsert: true, new: true }
+          );
+        }
+      }
+    }
+
+    const tplCount = await CertificateTemplate.countDocuments();
+    if (tplCount === 0) {
+      await CertificateTemplate.insertMany(DEFAULT_CERT_TEMPLATES.map(tmpl => ({ ...tmpl, clinicId: 'demo' })));
+    }
+
     }
   } catch (err) {
     console.warn('[Database Seeding Warning]:', err.message);

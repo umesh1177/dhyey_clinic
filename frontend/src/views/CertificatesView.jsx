@@ -54,6 +54,19 @@ export default function CertificatesView() {
   const [certPage, setCertPage] = useState(1);
   const [certPerPage, setCertPerPage] = useState(5);
 
+  const filteredCerts = certificates.filter(c =>
+    !filterQuery ||
+    (c.patientName || '').toLowerCase().includes(filterQuery.toLowerCase()) ||
+    (c.certNo || '').toLowerCase().includes(filterQuery.toLowerCase()) ||
+    (c.diagnosis || '').toLowerCase().includes(filterQuery.toLowerCase()) ||
+    (c.templateType || '').toLowerCase().includes(filterQuery.toLowerCase())
+  );
+
+  const totalCertPages = certPerPage === 'all' ? 1 : Math.max(1, Math.ceil(filteredCerts.length / (Number(certPerPage) || 5)));
+  const paginatedCerts = certPerPage === 'all'
+    ? filteredCerts
+    : filteredCerts.slice((certPage - 1) * Number(certPerPage), certPage * Number(certPerPage));
+
   const docName = session?.profile?.name || 'Dr. Chirag Paghdal';
   const clinicName = activeClinic?.name || 'Dhyey Clinic & Nursing Home';
   const clinicAddress = 'Shop No. 1, Mahavir Heights, New Kosad Road, Amroli, Surat · Ph: 9876543210';
@@ -646,7 +659,7 @@ export default function CertificatesView() {
             className="cms-input"
             placeholder="Search by Certificate ID or Patient Name..."
             value={filterQuery}
-            onChange={e => setFilterQuery(e.target.value)}
+            onChange={e => { setFilterQuery(e.target.value); setCertPage(1); }}
             style={{ width: '280px', height: '34px', fontSize: '12px', borderRadius: '6px' }}
           />
         </div>
@@ -673,9 +686,7 @@ export default function CertificatesView() {
                   </td>
                 </tr>
               ) : (
-                certificates
-                  .filter(c => !filterQuery || (c.patientName || '').toLowerCase().includes(filterQuery.toLowerCase()) || (c.certNo || '').toLowerCase().includes(filterQuery.toLowerCase()))
-                  .map((c, idx) => (
+                paginatedCerts.map((c, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid var(--border-subtle, #f1f5f9)' }}>
                     <td style={{ padding: '12px' }}>
                       <span className="font-mono" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '4px', padding: '2px 8px', fontSize: '11.5px', fontWeight: 700 }}>

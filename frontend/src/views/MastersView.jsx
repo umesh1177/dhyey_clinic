@@ -945,21 +945,51 @@ export default function MastersView() {
           fontSize: '12px', color: 'var(--text-muted)'
         }}>
           <div>
-            Showing 1 to {totalCount} of {totalCount} entries
+            Showing {totalCount === 0 ? 0 : (rowsPerPage === 'all' ? 1 : (page - 1) * Number(rowsPerPage) + 1)} to {rowsPerPage === 'all' ? totalCount : Math.min(page * Number(rowsPerPage), totalCount)} of {totalCount} entries
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>Rows per page:</span>
-            <select className="cms-input" style={{ height: '28px', fontSize: '11.5px', padding: '0 6px' }}>
-              <option>View All</option>
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
+            <select
+              className="cms-input"
+              style={{ height: '28px', fontSize: '11.5px', padding: '0 6px' }}
+              value={rowsPerPage}
+              onChange={e => {
+                setRowsPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                setPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value="all">View All</option>
             </select>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ cursor: 'not-allowed', color: '#94a3b8' }}>&lt; Prev</span>
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Page 1 of 1</span>
-            <span style={{ cursor: 'not-allowed', color: '#94a3b8' }}>Next &gt;</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: '4px', padding: '3px 8px', cursor: page > 1 ? 'pointer' : 'not-allowed',
+                color: page > 1 ? 'var(--text)' : '#94a3b8', fontSize: '11.5px', fontWeight: 600
+              }}
+            >
+              &lt; Prev
+            </button>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Page {page} of {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: '4px', padding: '3px 8px', cursor: page < totalPages ? 'pointer' : 'not-allowed',
+                color: page < totalPages ? 'var(--text)' : '#94a3b8', fontSize: '11.5px', fontWeight: 600
+              }}
+            >
+              Next &gt;
+            </button>
           </div>
         </div>
 
